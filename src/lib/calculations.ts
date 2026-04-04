@@ -1,5 +1,5 @@
-import { LIKELIHOOD_MAP } from "./constants";
-import type { Variable, SchoolScore, LikelihoodLabel } from "./types";
+import { likelihoodToProb } from "./constants";
+import type { Variable, SchoolScore } from "./types";
 
 export function computeScore(variables: Variable[], school: "A" | "B"): SchoolScore {
   const totalWeight = variables.reduce((sum, v) => sum + v.weight, 0);
@@ -10,7 +10,7 @@ export function computeScore(variables: Variable[], school: "A" | "B"): SchoolSc
 
   const eligible = variables.filter((v) => {
     const likelihood = school === "A" ? v.likelihoodA : v.likelihoodB;
-    return v.weight > 0 && likelihood !== "";
+    return v.weight > 0 && likelihood !== null;
   });
 
   if (eligible.length === 0) {
@@ -22,8 +22,8 @@ export function computeScore(variables: Variable[], school: "A" | "B"): SchoolSc
 
   for (const v of eligible) {
     const w = v.weight / totalWeight;
-    const label = (school === "A" ? v.likelihoodA : v.likelihoodB) as LikelihoodLabel;
-    const p = LIKELIHOOD_MAP[label];
+    const rawLikelihood = (school === "A" ? v.likelihoodA : v.likelihoodB) as number;
+    const p = likelihoodToProb(rawLikelihood);
     score += w * p;
     variance += w * w * p * (1 - p);
   }

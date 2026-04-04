@@ -1,23 +1,18 @@
-import type { LikelihoodLabel, ScenarioId, ScenarioMeta, AppData, Variable } from "./types";
+import type { ScenarioId, ScenarioMeta, AppData, Variable } from "./types";
 
-export const LIKELIHOOD_MAP: Record<LikelihoodLabel, number> = {
-  "Extremely unlikely": 0.05,
-  "Very unlikely": 0.15,
-  "Unlikely": 0.30,
-  "Unsure/Neutral": 0.50,
-  "Likely": 0.70,
-  "Very likely": 0.85,
-  "Extremely likely": 0.95,
-};
+// Maps a 1–10 likelihood rating to a probability (0–1)
+// Linear: value / 10, so 1 = 10%, 5 = 50%, 10 = 100%
+export function likelihoodToProb(value: number): number {
+  return value / 10;
+}
 
-export const LIKELIHOOD_OPTIONS: LikelihoodLabel[] = [
-  "Extremely unlikely",
-  "Very unlikely",
-  "Unlikely",
-  "Unsure/Neutral",
-  "Likely",
-  "Very likely",
-  "Extremely likely",
+export const LIKELIHOOD_LEGEND: { range: string; label: string; color: string }[] = [
+  { range: "1–2", label: "Very unlikely", color: "text-red-500" },
+  { range: "3–4", label: "Unlikely", color: "text-orange-500" },
+  { range: "5",   label: "Possible",     color: "text-yellow-600" },
+  { range: "6–7", label: "Likely",       color: "text-lime-600" },
+  { range: "8–9", label: "Very likely",  color: "text-emerald-600" },
+  { range: "10",  label: "Certain",      color: "text-emerald-700" },
 ];
 
 export const PRESET_VARIABLE_NAMES: string[] = [
@@ -65,8 +60,8 @@ function makePresetVariables(): Variable[] {
     id: `preset-${i}`,
     name,
     weight: 0,
-    likelihoodA: "",
-    likelihoodB: "",
+    likelihoodA: null,
+    likelihoodB: null,
     isPreset: true,
   }));
 }

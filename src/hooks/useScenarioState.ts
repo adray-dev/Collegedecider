@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Variable, ScenarioData, LikelihoodLabel } from "@/lib/types";
+import type { Variable, ScenarioData } from "@/lib/types";
 
 export function useScenarioState(initialData: ScenarioData) {
   const [variables, setVariables] = useState<Variable[]>(initialData.variables);
@@ -23,7 +23,7 @@ export function useScenarioState(initialData: ScenarioData) {
     setVariables((prev) => prev.map((v) => (v.id === id ? { ...v, name } : v)));
   }
 
-  function updateLikelihood(id: string, school: "A" | "B", value: LikelihoodLabel | "") {
+  function updateLikelihood(id: string, school: "A" | "B", value: number | null) {
     setVariables((prev) =>
       prev.map((v) =>
         v.id === id
@@ -40,8 +40,8 @@ export function useScenarioState(initialData: ScenarioData) {
         id: crypto.randomUUID(),
         name: "",
         weight: 0,
-        likelihoodA: "",
-        likelihoodB: "",
+        likelihoodA: null,
+        likelihoodB: null,
         isPreset: false,
       },
     ]);

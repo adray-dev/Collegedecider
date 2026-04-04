@@ -1,18 +1,9 @@
-export type LikelihoodLabel =
-  | "Extremely unlikely"
-  | "Very unlikely"
-  | "Unlikely"
-  | "Unsure/Neutral"
-  | "Likely"
-  | "Very likely"
-  | "Extremely likely";
-
 export interface Variable {
   id: string;
   name: string;
   weight: number;
-  likelihoodA: LikelihoodLabel | "";
-  likelihoodB: LikelihoodLabel | "";
+  likelihoodA: number | null; // 1–10, null = not set
+  likelihoodB: number | null;
   isPreset: boolean;
 }
 
