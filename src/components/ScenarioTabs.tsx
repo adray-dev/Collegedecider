@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { SCENARIOS } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
+import SummaryView from "./SummaryView";
 import type { AppData, ScenarioData, ScenarioId } from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type ActiveTab = ScenarioId | "summary";
 
 interface Props {
   initialData: AppData;
@@ -13,13 +15,12 @@ interface Props {
 
 export default function ScenarioTabs({ initialData }: Props) {
   const [appData, setAppData] = useState<AppData>(initialData);
-  const [activeTab, setActiveTab] = useState<ScenarioId>(SCENARIOS[0].id);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    // Skip the initial render — only auto-save on actual user changes
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
@@ -49,7 +50,6 @@ export default function ScenarioTabs({ initialData }: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appData]);
 
   function handleScenarioUpdate(updated: ScenarioData) {
@@ -61,8 +61,6 @@ export default function ScenarioTabs({ initialData }: Props) {
       },
     }));
   }
-
-  const activeScenario = SCENARIOS.find((s) => s.id === activeTab)!;
 
   const statusLabel: Record<SaveState, string> = {
     idle: "",
@@ -77,6 +75,8 @@ export default function ScenarioTabs({ initialData }: Props) {
     saved: "text-emerald-600",
     error: "text-red-500",
   };
+
+  const activeScenario = SCENARIOS.find((s) => s.id === activeTab);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -108,6 +108,19 @@ export default function ScenarioTabs({ initialData }: Props) {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-6 overflow-x-auto">
+          {/* Summary tab */}
+          <button
+            onClick={() => setActiveTab("summary")}
+            className={`whitespace-nowrap text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+              activeTab === "summary"
+                ? "bg-slate-800 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            Summary
+          </button>
+
+          {/* Scenario tabs */}
           {SCENARIOS.map((scenario) => (
             <button
               key={scenario.id}
@@ -123,26 +136,35 @@ export default function ScenarioTabs({ initialData }: Props) {
           ))}
         </div>
 
-        {/* Active scenario */}
+        {/* Active view */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-5">
-            {activeScenario.label}
-          </h2>
-          <ScenarioTable
-            key={activeTab}
-            scenarioData={appData.scenarios[activeTab]}
-            schoolA={activeScenario.schoolA}
-            schoolB={activeScenario.schoolB}
-            onUpdate={handleScenarioUpdate}
-          />
+          {activeTab === "summary" ? (
+            <>
+              <h2 className="text-lg font-semibold text-slate-800 mb-5">All Scenarios — Summary</h2>
+              <SummaryView appData={appData} />
+            </>
+          ) : activeScenario ? (
+            <>
+              <h2 className="text-lg font-semibold text-slate-800 mb-5">{activeScenario.label}</h2>
+              <ScenarioTable
+                key={activeTab}
+                scenarioData={appData.scenarios[activeTab as ScenarioId]}
+                schoolA={activeScenario.schoolA}
+                schoolB={activeScenario.schoolB}
+                onUpdate={handleScenarioUpdate}
+              />
+            </>
+          ) : null}
         </div>
 
         {/* How-to hint */}
-        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-          <strong>How to use:</strong> Set the <em>Weight</em> for each factor (all weights must total
-          100). Then for each school, choose how likely that factor is to be satisfied there. The
-          calculator scores each school and shows a confidence interval based on your ratings.
-        </div>
+        {activeTab !== "summary" && (
+          <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
+            <strong>How to use:</strong> Set the <em>Weight</em> for each factor (all weights must total
+            100). Then for each school, choose how likely that factor is to be satisfied there. The
+            calculator scores each school and shows a confidence interval based on your ratings.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -39,8 +39,6 @@ export default function ScenarioTable({ scenarioData, schoolA, schoolB, onUpdate
   const weightColor =
     totalWeight === 100
       ? "text-emerald-600"
-      : totalWeight > 100
-      ? "text-red-600"
       : totalWeight > 0
       ? "text-amber-600"
       : "text-slate-400";
@@ -51,17 +49,32 @@ export default function ScenarioTable({ scenarioData, schoolA, schoolB, onUpdate
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full">
           <thead>
+            {/* Top header row: group labels */}
+            <tr className="bg-slate-100 border-b border-slate-200">
+              <th className="py-2 pl-3 pr-2" />
+              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-2 px-2 w-24 border-r border-slate-200">
+                Shared
+              </th>
+              <th
+                colSpan={2}
+                className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-2 px-2"
+              >
+                Likelihood per school
+              </th>
+              <th className="w-8" />
+            </tr>
+            {/* Bottom header row: column labels */}
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide py-3 pl-3 pr-2">
+              <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wide py-2 pl-3 pr-2">
                 Variable
               </th>
-              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-3 px-2 w-24">
+              <th className="text-center text-xs font-semibold text-slate-600 uppercase tracking-wide py-2 px-2 w-24 border-r border-slate-200">
                 Weight
               </th>
-              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-3 px-2 w-40">
+              <th className="text-center text-xs font-semibold text-blue-600 uppercase tracking-wide py-2 px-2 w-40">
                 {schoolA}
               </th>
-              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-3 px-2 w-40">
+              <th className="text-center text-xs font-semibold text-violet-600 uppercase tracking-wide py-2 px-2 w-40">
                 {schoolB}
               </th>
               <th className="w-8" />
@@ -113,8 +126,8 @@ export default function ScenarioTable({ scenarioData, schoolA, schoolB, onUpdate
 
       {/* Statistical note */}
       <p className="text-xs text-slate-400 leading-relaxed">
-        Score = weighted expected value (0–100). SD and 95% CI are derived from a Bernoulli model
-        treating each likelihood as a probability. Higher score = stronger overall fit.
+        Score = weighted expected value (0–100). SD and 95% CI use a Bernoulli variance model.
+        Higher score = stronger overall fit.
       </p>
     </div>
   );
