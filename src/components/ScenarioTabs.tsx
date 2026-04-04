@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SCENARIOS } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
-import SaveButton from "./SaveButton";
 import type { AppData, ScenarioData, ScenarioId } from "@/lib/types";
+
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 interface Props {
   initialData: AppData;
@@ -13,6 +14,43 @@ interface Props {
 export default function ScenarioTabs({ initialData }: Props) {
   const [appData, setAppData] = useState<AppData>(initialData);
   const [activeTab, setActiveTab] = useState<ScenarioId>(SCENARIOS[0].id);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the initial render — only auto-save on actual user changes
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSaveState("saving");
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(appData),
+        });
+        if (!res.ok) throw new Error("Save failed");
+        const json = await res.json();
+        setAppData((prev) => ({ ...prev, lastSaved: json.lastSaved ?? prev.lastSaved }));
+        setSaveState("saved");
+        setTimeout(() => setSaveState("idle"), 2000);
+      } catch {
+        setSaveState("error");
+        setTimeout(() => setSaveState("idle"), 3000);
+      }
+    }, 1000);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appData]);
 
   function handleScenarioUpdate(updated: ScenarioData) {
     setAppData((prev) => ({
@@ -26,6 +64,20 @@ export default function ScenarioTabs({ initialData }: Props) {
 
   const activeScenario = SCENARIOS.find((s) => s.id === activeTab)!;
 
+  const statusLabel: Record<SaveState, string> = {
+    idle: "",
+    saving: "Saving…",
+    saved: "Saved",
+    error: "Save failed",
+  };
+
+  const statusColor: Record<SaveState, string> = {
+    idle: "",
+    saving: "text-slate-400",
+    saved: "text-emerald-600",
+    error: "text-red-500",
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -38,8 +90,15 @@ export default function ScenarioTabs({ initialData }: Props) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <SaveButton data={appData} />
-            {appData.lastSaved && (
+            <span className={`text-sm font-medium transition-colors ${statusColor[saveState]}`}>
+              {saveState === "saved" && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+              {statusLabel[saveState]}
+            </span>
+            {appData.lastSaved && saveState === "idle" && (
               <span className="text-xs text-slate-400">
                 Last saved {new Date(appData.lastSaved).toLocaleString()}
               </span>
