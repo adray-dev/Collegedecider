@@ -67,10 +67,10 @@ export default function VariableRow({
         />
       </td>
 
-      {/* Likelihood range % */}
+      {/* Score range */}
       <td className="py-2 px-2 w-52">
         <div className="flex items-center gap-1">
-          <div className="flex items-center gap-0.5 flex-1">
+          <div className="flex-1">
             <input
               type="number"
               min={0}
@@ -81,10 +81,9 @@ export default function VariableRow({
               onChange={(e) => handleMin(e.target.value)}
               className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
             />
-            <span className="text-slate-400 text-xs shrink-0">%</span>
           </div>
           <span className="text-slate-400 text-xs shrink-0">–</span>
-          <div className="flex items-center gap-0.5 flex-1">
+          <div className="flex-1">
             <input
               type="number"
               min={0}
@@ -95,7 +94,6 @@ export default function VariableRow({
               onChange={(e) => handleMax(e.target.value)}
               className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
             />
-            <span className="text-slate-400 text-xs shrink-0">%</span>
           </div>
         </div>
       </td>
