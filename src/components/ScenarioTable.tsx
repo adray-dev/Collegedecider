@@ -42,7 +42,7 @@ export default function ScenarioTable({
     <div className="space-y-6">
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full">
+        <table className="w-full min-w-[580px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wide py-3 pl-3 pr-2">
