@@ -9,19 +9,15 @@ interface Props {
 export default function SummaryView({ appData }: Props) {
   const results = SCENARIOS.map((scenario) => ({
     scenario,
-    score: computeScore(appData.scenarios[scenario.id].variables),
+    score: computeScore(appData.variables, appData.scenarios[scenario.id].entries),
   }));
 
   const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.score);
   const topScore = validScores.length > 0 ? Math.max(...validScores) : null;
-
-  // Compute stable ranks without reordering the list
   const sorted = [...validScores].sort((a, b) => b - a);
   const getRank = (score: number) => sorted.indexOf(score) + 1;
 
-  const hasAnyData = validScores.length > 0;
-
-  if (!hasAnyData) {
+  if (validScores.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400 text-sm">
         No scores yet — go to each scenario tab and fill in importance weights and likelihoods.
@@ -46,14 +42,10 @@ export default function SummaryView({ appData }: Props) {
               isTop ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"
             }`}
           >
-            {/* Rank badge */}
-            <div className={`text-2xl font-bold w-8 text-center shrink-0 ${
-              isTop ? "text-emerald-600" : "text-slate-300"
-            }`}>
+            <div className={`text-2xl font-bold w-8 text-center shrink-0 ${isTop ? "text-emerald-600" : "text-slate-300"}`}>
               {rank ?? "—"}
             </div>
 
-            {/* Label + bar */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="font-semibold text-slate-800">{scenario.label}</span>
@@ -80,7 +72,6 @@ export default function SummaryView({ appData }: Props) {
               )}
             </div>
 
-            {/* Score */}
             {score.isValid && (
               <div className="text-right shrink-0">
                 <div className="text-3xl font-bold text-slate-900">{score.score.toFixed(1)}</div>

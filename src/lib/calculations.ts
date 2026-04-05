@@ -1,14 +1,19 @@
-import { likelihoodToProb } from "./constants";
-import type { Variable, SchoolScore } from "./types";
+import type { VariableDef, ScenarioEntry, SchoolScore } from "./types";
 
-export function computeScore(variables: Variable[]): SchoolScore {
-  const totalWeight = variables.reduce((sum, v) => sum + v.weight, 0);
+export function computeScore(
+  variables: VariableDef[],
+  entries: Record<string, ScenarioEntry>
+): SchoolScore {
+  const totalWeight = variables.reduce((sum, v) => sum + (entries[v.id]?.weight ?? 0), 0);
 
   if (totalWeight === 0) {
     return { score: 0, sd: 0, ciLow: 0, ciHigh: 0, isValid: false };
   }
 
-  const eligible = variables.filter((v) => v.weight > 0 && v.likelihood !== null);
+  const eligible = variables.filter((v) => {
+    const e = entries[v.id];
+    return e && e.weight > 0 && e.likelihood !== null;
+  });
 
   if (eligible.length === 0) {
     return { score: 0, sd: 0, ciLow: 0, ciHigh: 0, isValid: false };
@@ -18,8 +23,9 @@ export function computeScore(variables: Variable[]): SchoolScore {
   let variance = 0;
 
   for (const v of eligible) {
-    const w = v.weight / totalWeight;
-    const p = likelihoodToProb(v.likelihood as number);
+    const e = entries[v.id];
+    const w = e.weight / totalWeight;
+    const p = e.likelihood! / 100;
     score += w * p;
     variance += w * w * p * (1 - p);
   }

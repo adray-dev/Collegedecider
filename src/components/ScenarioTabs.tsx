@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SCENARIOS } from "@/lib/constants";
+import { SCENARIOS, SCENARIO_IDS, buildDefaultAppData } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
 import SummaryView from "./SummaryView";
-import type { AppData, ScenarioData, ScenarioId } from "@/lib/types";
+import type { AppData, ScenarioId } from "@/lib/types";
 
 const LS_KEY = "college-decider:app-data";
 
@@ -28,85 +28,146 @@ function loadFromLocalStorage(): AppData | null {
 function saveToLocalStorage(data: AppData) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(data));
-  } catch {
-    // storage quota exceeded — ignore
-  }
+  } catch { /* quota exceeded */ }
 }
 
 export default function ScenarioTabs({ initialData }: Props) {
-  // On first render, prefer localStorage over the server default if server has no saved data
   const [appData, setAppData] = useState<AppData>(() => {
-    if (initialData.lastSaved) return initialData; // server has real data — use it
+    if (initialData.lastSaved) return initialData;
     const local = typeof window !== "undefined" ? loadFromLocalStorage() : null;
-    return local ?? initialData;
+    // Migrate old format that doesn't have top-level variables
+    const data = local ?? initialData;
+    if (!data.variables) return buildDefaultAppData();
+    return data;
   });
   const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
+  // Auto-save on any appData change
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSaveState("saving");
-
     debounceRef.current = setTimeout(async () => {
-      // Always save to localStorage immediately as fallback
       const dataWithTimestamp = { ...appData, lastSaved: new Date().toISOString() };
       saveToLocalStorage(dataWithTimestamp);
-
       try {
         const res = await fetch("/api/data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(appData),
         });
-        if (!res.ok) throw new Error("Save failed");
+        if (!res.ok) throw new Error();
         const json = await res.json();
         const saved = { ...appData, lastSaved: json.lastSaved ?? dataWithTimestamp.lastSaved };
         setAppData(saved);
         saveToLocalStorage(saved);
-        setSaveState("saved");
       } catch {
-        // Server unavailable — localStorage save already happened
         setAppData(dataWithTimestamp);
-        setSaveState("saved"); // show saved since localStorage worked
       }
-
+      setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 2000);
     }, 1000);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [appData]);
 
-  function handleScenarioUpdate(updated: ScenarioData) {
+  // ── Variable structure callbacks (apply to all scenarios) ───────────────
+
+  function handleAddVariable() {
+    const id = crypto.randomUUID();
+    setAppData((prev) => ({
+      ...prev,
+      variables: [...prev.variables, { id, name: "", isPreset: false }],
+      scenarios: Object.fromEntries(
+        SCENARIO_IDS.map((sid) => [
+          sid,
+          {
+            ...prev.scenarios[sid],
+            entries: { ...prev.scenarios[sid].entries, [id]: { weight: 0, likelihood: null } },
+          },
+        ])
+      ) as AppData["scenarios"],
+    }));
+  }
+
+  function handleDeleteVariable(variableId: string) {
+    setAppData((prev) => {
+      const newEntries = (sid: ScenarioId) => {
+        const e = { ...prev.scenarios[sid].entries };
+        delete e[variableId];
+        return e;
+      };
+      return {
+        ...prev,
+        variables: prev.variables.filter((v) => v.id !== variableId),
+        scenarios: Object.fromEntries(
+          SCENARIO_IDS.map((sid) => [
+            sid,
+            { ...prev.scenarios[sid], entries: newEntries(sid) },
+          ])
+        ) as AppData["scenarios"],
+      };
+    });
+  }
+
+  function handleUpdateName(variableId: string, name: string) {
+    setAppData((prev) => ({
+      ...prev,
+      variables: prev.variables.map((v) => (v.id === variableId ? { ...v, name } : v)),
+    }));
+  }
+
+  // ── Per-scenario entry callbacks ─────────────────────────────────────────
+
+  function handleUpdateWeight(scenarioId: ScenarioId, variableId: string, rawValue: string) {
+    setAppData((prev) => {
+      const entries = prev.scenarios[scenarioId].entries;
+      const othersSum = Object.entries(entries)
+        .filter(([id]) => id !== variableId)
+        .reduce((s, [, e]) => s + e.weight, 0);
+      const parsed = parseInt(rawValue, 10);
+      const capped = Math.min(Math.max(0, isNaN(parsed) ? 0 : parsed), 100 - othersSum);
+      return {
+        ...prev,
+        scenarios: {
+          ...prev.scenarios,
+          [scenarioId]: {
+            ...prev.scenarios[scenarioId],
+            entries: {
+              ...entries,
+              [variableId]: { ...entries[variableId], weight: capped },
+            },
+          },
+        },
+      };
+    });
+  }
+
+  function handleUpdateLikelihood(scenarioId: ScenarioId, variableId: string, value: number | null) {
     setAppData((prev) => ({
       ...prev,
       scenarios: {
         ...prev.scenarios,
-        [updated.scenarioId]: updated,
+        [scenarioId]: {
+          ...prev.scenarios[scenarioId],
+          entries: {
+            ...prev.scenarios[scenarioId].entries,
+            [variableId]: { ...prev.scenarios[scenarioId].entries[variableId], likelihood: value },
+          },
+        },
       },
     }));
   }
 
-  const statusLabel: Record<SaveState, string> = {
-    idle: "",
-    saving: "Saving…",
-    saved: "Saved",
-    error: "Save failed",
-  };
+  // ── Render ───────────────────────────────────────────────────────────────
 
+  const statusLabel: Record<SaveState, string> = {
+    idle: "", saving: "Saving…", saved: "Saved", error: "Save failed",
+  };
   const statusColor: Record<SaveState, string> = {
-    idle: "",
-    saving: "text-slate-400",
-    saved: "text-emerald-600",
-    error: "text-red-500",
+    idle: "", saving: "text-slate-400", saved: "text-emerald-600", error: "text-red-500",
   };
 
   return (
@@ -117,7 +178,7 @@ export default function ScenarioTabs({ initialData }: Props) {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Grad School Decision Calculator</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Assign weights to what matters to you, then rate each school&apos;s likelihood for each factor.
+              Assign weights to what matters to you, then rate each outcome&apos;s likelihood per combination.
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -164,22 +225,26 @@ export default function ScenarioTabs({ initialData }: Props) {
           ))}
         </div>
 
-        {/* Active view */}
+        {/* Views */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          {/* Summary — always mounted, hidden when inactive */}
           <div className={activeTab === "summary" ? "" : "hidden"}>
             <h2 className="text-lg font-semibold text-slate-800 mb-5">All Scenarios — Summary</h2>
             <SummaryView appData={appData} />
           </div>
 
-          {/* Scenario tables — all 4 always mounted, only active one visible */}
           {SCENARIOS.map((scenario) => (
             <div key={scenario.id} className={activeTab === scenario.id ? "" : "hidden"}>
               <h2 className="text-lg font-semibold text-slate-800 mb-5">{scenario.label}</h2>
               <ScenarioTable
-                scenarioData={appData.scenarios[scenario.id]}
+                scenarioId={scenario.id}
                 label={scenario.label}
-                onUpdate={handleScenarioUpdate}
+                variables={appData.variables}
+                entries={appData.scenarios[scenario.id].entries}
+                onUpdateName={handleUpdateName}
+                onUpdateWeight={handleUpdateWeight}
+                onUpdateLikelihood={handleUpdateLikelihood}
+                onAddVariable={handleAddVariable}
+                onDeleteVariable={handleDeleteVariable}
               />
             </div>
           ))}
@@ -188,8 +253,8 @@ export default function ScenarioTabs({ initialData }: Props) {
         {activeTab !== "summary" && (
           <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
             <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
-            100). Then rate how likely each outcome is for this combination (0–100%). The calculator
-            scores each scenario and shows a confidence interval based on your ratings.
+            100). Then rate how likely each outcome is for this combination (0–100%). Adding or removing
+            a variable here updates it across all scenario tabs.
           </div>
         )}
       </div>

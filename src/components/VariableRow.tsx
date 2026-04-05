@@ -1,23 +1,25 @@
-import type { Variable } from "@/lib/types";
+import type { VariableDef, ScenarioEntry } from "@/lib/types";
 
 interface Props {
-  variable: Variable;
+  variable: VariableDef;
+  entry: ScenarioEntry;
+  totalWeight: number;
   onUpdateName: (id: string, name: string) => void;
   onUpdateWeight: (id: string, value: string) => void;
   onUpdateLikelihood: (id: string, value: number | null) => void;
   onDelete: (id: string) => void;
-  totalWeight: number;
 }
 
 export default function VariableRow({
   variable,
+  entry,
+  totalWeight,
   onUpdateName,
   onUpdateWeight,
   onUpdateLikelihood,
   onDelete,
-  totalWeight,
 }: Props) {
-  const budgetExhausted = totalWeight >= 100 && variable.weight === 0;
+  const budgetExhausted = totalWeight >= 100 && entry.weight === 0;
 
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50 group">
@@ -38,7 +40,7 @@ export default function VariableRow({
           type="number"
           min={0}
           max={100}
-          value={variable.weight === 0 ? "" : variable.weight}
+          value={entry.weight === 0 ? "" : entry.weight}
           onChange={(e) => onUpdateWeight(variable.id, e.target.value)}
           placeholder="0"
           className={`w-full text-sm text-center border rounded-md px-2 py-1 outline-none focus:ring-2 transition-colors ${
@@ -57,7 +59,7 @@ export default function VariableRow({
             min={0}
             max={100}
             step={1}
-            value={variable.likelihood ?? ""}
+            value={entry.likelihood ?? ""}
             placeholder="0–100"
             onChange={(e) => {
               if (e.target.value === "") { onUpdateLikelihood(variable.id, null); return; }

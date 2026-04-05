@@ -1,9 +1,4 @@
-import type { ScenarioId, ScenarioMeta, AppData, Variable } from "./types";
-
-// Maps 0–100 percentage points to a 0–1 probability
-export function likelihoodToProb(value: number): number {
-  return value / 100;
-}
+import type { ScenarioId, ScenarioMeta, AppData, VariableDef } from "./types";
 
 export const PRESET_VARIABLE_NAMES: string[] = [
   "Optimal job outcome",
@@ -25,20 +20,22 @@ export const SCENARIOS: ScenarioMeta[] = [
   { id: "stanford-jd-phd",       label: "Stanford JD + Stanford PhD" },
 ];
 
-function makePresetVariables(): Variable[] {
-  return PRESET_VARIABLE_NAMES.map((name, i) => ({
-    id: `preset-${i}`,
-    name,
-    weight: 0,
-    likelihood: null,
-    isPreset: true,
-  }));
-}
+export const SCENARIO_IDS: ScenarioId[] = SCENARIOS.map((s) => s.id);
 
 export function buildDefaultAppData(): AppData {
-  const scenarios = {} as Record<ScenarioId, { scenarioId: ScenarioId; variables: Variable[] }>;
-  for (const s of SCENARIOS) {
-    scenarios[s.id] = { scenarioId: s.id, variables: makePresetVariables() };
-  }
-  return { scenarios, lastSaved: null };
+  const variables: VariableDef[] = PRESET_VARIABLE_NAMES.map((name, i) => ({
+    id: `preset-${i}`,
+    name,
+    isPreset: true,
+  }));
+
+  const emptyEntries = Object.fromEntries(
+    variables.map((v) => [v.id, { weight: 0, likelihood: null }])
+  );
+
+  const scenarios = Object.fromEntries(
+    SCENARIO_IDS.map((id) => [id, { scenarioId: id, entries: { ...emptyEntries } }])
+  ) as AppData["scenarios"];
+
+  return { variables, scenarios, lastSaved: null };
 }

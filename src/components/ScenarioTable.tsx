@@ -1,38 +1,35 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useScenarioState } from "@/hooks/useScenarioState";
 import VariableRow from "./VariableRow";
 import ScoreDisplay from "./ScoreDisplay";
 import { computeScore } from "@/lib/calculations";
-import type { ScenarioData } from "@/lib/types";
+import type { VariableDef, ScenarioEntry, ScenarioId } from "@/lib/types";
 
 interface Props {
-  scenarioData: ScenarioData;
+  scenarioId: ScenarioId;
   label: string;
-  onUpdate: (data: ScenarioData) => void;
+  variables: VariableDef[];
+  entries: Record<string, ScenarioEntry>;
+  onUpdateName: (id: string, name: string) => void;
+  onUpdateWeight: (scenarioId: ScenarioId, variableId: string, value: string) => void;
+  onUpdateLikelihood: (scenarioId: ScenarioId, variableId: string, value: number | null) => void;
+  onAddVariable: () => void;
+  onDeleteVariable: (id: string) => void;
 }
 
-export default function ScenarioTable({ scenarioData, label, onUpdate }: Props) {
-  const {
-    variables,
-    totalWeight,
-    updateWeight,
-    updateName,
-    updateLikelihood,
-    addRow,
-    deleteRow,
-    getScenarioData,
-  } = useScenarioState(scenarioData);
-
-  const isMounted = useRef(false);
-  useEffect(() => {
-    if (!isMounted.current) { isMounted.current = true; return; }
-    onUpdate(getScenarioData());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variables]);
-
-  const score = computeScore(variables);
+export default function ScenarioTable({
+  scenarioId,
+  label,
+  variables,
+  entries,
+  onUpdateName,
+  onUpdateWeight,
+  onUpdateLikelihood,
+  onAddVariable,
+  onDeleteVariable,
+}: Props) {
+  const totalWeight = variables.reduce((s, v) => s + (entries[v.id]?.weight ?? 0), 0);
+  const score = computeScore(variables, entries);
 
   const weightColor =
     totalWeight === 100
@@ -65,21 +62,22 @@ export default function ScenarioTable({ scenarioData, label, onUpdate }: Props) 
               <VariableRow
                 key={variable.id}
                 variable={variable}
+                entry={entries[variable.id] ?? { weight: 0, likelihood: null }}
                 totalWeight={totalWeight}
-                onUpdateName={updateName}
-                onUpdateWeight={updateWeight}
-                onUpdateLikelihood={updateLikelihood}
-                onDelete={deleteRow}
+                onUpdateName={onUpdateName}
+                onUpdateWeight={(id, val) => onUpdateWeight(scenarioId, id, val)}
+                onUpdateLikelihood={(id, val) => onUpdateLikelihood(scenarioId, id, val)}
+                onDelete={onDeleteVariable}
               />
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Footer: add button + weight budget */}
+      {/* Footer */}
       <div className="flex items-center justify-between px-1">
         <button
-          onClick={addRow}
+          onClick={onAddVariable}
           className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

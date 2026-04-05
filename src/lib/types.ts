@@ -1,9 +1,12 @@
-export interface Variable {
+export interface VariableDef {
   id: string;
   name: string;
-  weight: number;
-  likelihood: number | null; // 0–100 percentage points, null = not set
   isPreset: boolean;
+}
+
+export interface ScenarioEntry {
+  weight: number;
+  likelihood: number | null; // 0–100 percentage points
 }
 
 export type ScenarioId =
@@ -14,10 +17,11 @@ export type ScenarioId =
 
 export interface ScenarioData {
   scenarioId: ScenarioId;
-  variables: Variable[];
+  entries: Record<string, ScenarioEntry>; // keyed by variableId
 }
 
 export interface AppData {
+  variables: VariableDef[];              // shared across all scenarios
   scenarios: Record<ScenarioId, ScenarioData>;
   lastSaved: string | null;
 }
