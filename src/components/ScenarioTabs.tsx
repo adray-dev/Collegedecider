@@ -47,10 +47,12 @@ function saveToLocalStorage(data: AppData) {
 
 export default function ScenarioTabs({ initialData }: Props) {
   const [appData, setAppData] = useState<AppData>(() => {
-    // Server has real saved data (Upstash configured) — use it
-    if (initialData.lastSaved) return initialData;
-    // Otherwise fall back to localStorage, with format validation
     const local = typeof window !== "undefined" ? loadFromLocalStorage() : null;
+    // Use whichever source has the most recent lastSaved timestamp
+    if (initialData.lastSaved && local?.lastSaved) {
+      return initialData.lastSaved >= local.lastSaved ? initialData : local;
+    }
+    if (initialData.lastSaved) return initialData;
     return local ?? buildDefaultAppData();
   });
 
@@ -60,20 +62,22 @@ export default function ScenarioTabs({ initialData }: Props) {
   const isFirstRender = useRef(true);
   const suppressNextSave = useRef(false);
 
-  // On mount: if SSR didn't return saved data, try fetching from the API directly.
-  // This covers mobile/other devices where localStorage is empty but Redis has data.
+  // On mount: always fetch latest data from API and use it if it's newer than what we have.
+  // This ensures cross-device sync — mobile gets computer's latest data from Redis.
   useEffect(() => {
-    if (initialData.lastSaved) return; // SSR already gave us good data
     fetch("/api/data")
       .then((r) => r.json())
       .then((data: AppData) => {
-        if (data?.lastSaved) {
-          suppressNextSave.current = true;
-          setAppData(data);
-        }
+        if (!data?.lastSaved) return;
+        setAppData((current) => {
+          if (!current.lastSaved || data.lastSaved! > current.lastSaved) {
+            suppressNextSave.current = true;
+            return data;
+          }
+          return current;
+        });
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-save on actual appData changes only.
