@@ -1,16 +1,22 @@
 import type { ScenarioId, ScenarioMeta, AppData, VariableDef } from "./types";
 
 export const PRESET_VARIABLE_NAMES: string[] = [
-  "Optimal job outcome",
-  "Optimal scholarship production",
-  "Ideal advisor personality fit",
-  "School personality fit",
-  "Ideal breadth of faculty",
-  "Interest fit of faculty",
-  "Interest fit of advisor",
-  "Money",
-  "Ideal location",
+  "Ideal PhD advising (academic fit)",
+  "Ideal law advising (academic fit)",
+  "Ideal PhD advising (personality fit)",
+  "Ideal law advising (personality fit)",
+  "Ideal PhD advising (topical fit)",
+  "Ideal law advising (topical fit)",
+  "Ideal PhD institutional fit",
+  "Ideal law institutional fit",
+  "Ideal prestige level",
+  "More money",
+  "Ideal location(s)",
   "Ideal social life",
+  "Ideal cohort experience/network",
+  "Ideal sequencing",
+  "Ideal clerking situation",
+  "Ideal other benefits",
 ];
 
 export const SCENARIOS: ScenarioMeta[] = [
