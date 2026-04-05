@@ -94,7 +94,7 @@ export default function ScenarioTable({
       <ScoreDisplay scenarioLabel={label} score={score} />
 
       <p className="text-xs text-slate-400 leading-relaxed">
-        Score = weighted expected value (0–100). SD and 95% CI use a Bernoulli variance model.
+        Score = weighted expected value (0–100) using the midpoint of each likelihood range. SD and 95% CI use a Bernoulli variance model.
         Compare scores across tabs on the Summary page.
       </p>
     </div>

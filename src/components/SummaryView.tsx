@@ -84,7 +84,7 @@ export default function SummaryView({ appData }: Props) {
             {score.isValid && (
               <div className="text-right shrink-0">
                 <div className="text-3xl font-bold text-slate-900">{score.scoreAvg.toFixed(1)}</div>
-                <div className="text-xs text-slate-400">avg / 100</div>
+                <div className="text-xs text-slate-400">/ 100</div>
               </div>
             )}
           </div>
@@ -92,7 +92,7 @@ export default function SummaryView({ appData }: Props) {
       })}
 
       <p className="text-xs text-slate-400 pt-2">
-        Score = weighted expected value (0–100) using importance weights and the average of each likelihood range.
+        Score = weighted expected value (0–100) using importance weights and the midpoint of each likelihood range.
         Higher score = stronger overall fit for that combination.
       </p>
     </div>

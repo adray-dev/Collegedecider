@@ -14,7 +14,7 @@ export default function ScoreDisplay({ scenarioLabel, score }: Props) {
           {/* Average score — prominent */}
           <div className="flex items-baseline gap-1.5">
             <span className="text-4xl font-bold text-slate-900">{score.scoreAvg.toFixed(1)}</span>
-            <span className="text-slate-400 text-sm">/ 100 avg</span>
+            <span className="text-slate-400 text-sm">/ 100</span>
           </div>
 
           {/* Progress bar */}
