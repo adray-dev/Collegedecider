@@ -52,7 +52,7 @@ export default function ScenarioTable({
                 Level of Importance
               </th>
               <th className="text-center text-xs font-semibold text-blue-600 uppercase tracking-wide py-3 px-2 w-52">
-                Score range (%)
+                Score range
               </th>
               <th className="w-8" />
             </tr>
