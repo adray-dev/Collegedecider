@@ -109,8 +109,6 @@ export default function ScenarioTabs({ initialData }: Props) {
     error: "text-red-500",
   };
 
-  const activeScenario = SCENARIOS.find((s) => s.id === activeTab);
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -168,29 +166,30 @@ export default function ScenarioTabs({ initialData }: Props) {
 
         {/* Active view */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          {activeTab === "summary" ? (
-            <>
-              <h2 className="text-lg font-semibold text-slate-800 mb-5">All Scenarios — Summary</h2>
-              <SummaryView appData={appData} />
-            </>
-          ) : activeScenario ? (
-            <>
-              <h2 className="text-lg font-semibold text-slate-800 mb-5">{activeScenario.label}</h2>
+          {/* Summary — always mounted, hidden when inactive */}
+          <div className={activeTab === "summary" ? "" : "hidden"}>
+            <h2 className="text-lg font-semibold text-slate-800 mb-5">All Scenarios — Summary</h2>
+            <SummaryView appData={appData} />
+          </div>
+
+          {/* Scenario tables — all 4 always mounted, only active one visible */}
+          {SCENARIOS.map((scenario) => (
+            <div key={scenario.id} className={activeTab === scenario.id ? "" : "hidden"}>
+              <h2 className="text-lg font-semibold text-slate-800 mb-5">{scenario.label}</h2>
               <ScenarioTable
-                key={activeTab}
-                scenarioData={appData.scenarios[activeTab as ScenarioId]}
-                label={activeScenario.label}
+                scenarioData={appData.scenarios[scenario.id]}
+                label={scenario.label}
                 onUpdate={handleScenarioUpdate}
               />
-            </>
-          ) : null}
+            </div>
+          ))}
         </div>
 
         {activeTab !== "summary" && (
           <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
             <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
-            100). Then rate how likely each outcome is at each school (1–10). The calculator scores
-            each school and shows a confidence interval based on your ratings.
+            100). Then rate how likely each outcome is for this combination (0–100%). The calculator
+            scores each scenario and shows a confidence interval based on your ratings.
           </div>
         )}
       </div>

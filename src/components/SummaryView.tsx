@@ -10,15 +10,16 @@ export default function SummaryView({ appData }: Props) {
   const results = SCENARIOS.map((scenario) => ({
     scenario,
     score: computeScore(appData.scenarios[scenario.id].variables),
-  })).sort((a, b) => {
-    if (!a.score.isValid && !b.score.isValid) return 0;
-    if (!a.score.isValid) return 1;
-    if (!b.score.isValid) return -1;
-    return b.score.score - a.score.score;
-  });
+  }));
 
-  const topScore = results.find((r) => r.score.isValid)?.score.score ?? null;
-  const hasAnyData = results.some((r) => r.score.isValid);
+  const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.score);
+  const topScore = validScores.length > 0 ? Math.max(...validScores) : null;
+
+  // Compute stable ranks without reordering the list
+  const sorted = [...validScores].sort((a, b) => b - a);
+  const getRank = (score: number) => sorted.indexOf(score) + 1;
+
+  const hasAnyData = validScores.length > 0;
 
   if (!hasAnyData) {
     return (
@@ -31,20 +32,18 @@ export default function SummaryView({ appData }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Scenarios ranked by score. The highest score is your recommended choice.
+        Scenarios shown in fixed order. The highest score is your recommended choice.
       </p>
 
-      {results.map(({ scenario, score }, i) => {
+      {results.map(({ scenario, score }) => {
         const isTop = score.isValid && score.score === topScore;
-        const rank = score.isValid ? i + 1 : null;
+        const rank = score.isValid ? getRank(score.score) : null;
 
         return (
           <div
             key={scenario.id}
             className={`rounded-xl border p-5 flex items-center gap-5 ${
-              isTop
-                ? "border-emerald-400 bg-emerald-50"
-                : "border-slate-200 bg-white"
+              isTop ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"
             }`}
           >
             {/* Rank badge */}
@@ -68,7 +67,7 @@ export default function SummaryView({ appData }: Props) {
                 <>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
+                      className={`h-full rounded-full transition-all duration-300 ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
                       style={{ width: `${score.score}%` }}
                     />
                   </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useScenarioState } from "@/hooks/useScenarioState";
 import VariableRow from "./VariableRow";
 import ScoreDisplay from "./ScoreDisplay";
@@ -25,7 +25,9 @@ export default function ScenarioTable({ scenarioData, label, onUpdate }: Props) 
     getScenarioData,
   } = useScenarioState(scenarioData);
 
+  const isMounted = useRef(false);
   useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
     onUpdate(getScenarioData());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variables]);
