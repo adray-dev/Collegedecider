@@ -7,115 +7,94 @@ interface Props {
 }
 
 export default function SummaryView({ appData }: Props) {
-  const results = SCENARIOS.map((scenario) => {
-    const { variables } = appData.scenarios[scenario.id];
-    const scoreA = computeScore(variables, "A");
-    const scoreB = computeScore(variables, "B");
-    const winner =
-      scoreA.isValid && scoreB.isValid
-        ? scoreA.score > scoreB.score
-          ? scenario.schoolA
-          : scoreB.score > scoreA.score
-          ? scenario.schoolB
-          : "Tie"
-        : null;
-
-    return { scenario, scoreA, scoreB, winner };
+  const results = SCENARIOS.map((scenario) => ({
+    scenario,
+    score: computeScore(appData.scenarios[scenario.id].variables),
+  })).sort((a, b) => {
+    if (!a.score.isValid && !b.score.isValid) return 0;
+    if (!a.score.isValid) return 1;
+    if (!b.score.isValid) return -1;
+    return b.score.score - a.score.score;
   });
 
-  const hasAnyData = results.some((r) => r.scoreA.isValid || r.scoreB.isValid);
+  const topScore = results.find((r) => r.score.isValid)?.score.score ?? null;
+  const hasAnyData = results.some((r) => r.score.isValid);
+
+  if (!hasAnyData) {
+    return (
+      <div className="text-center py-16 text-slate-400 text-sm">
+        No scores yet — go to each scenario tab and fill in importance weights and likelihoods.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Scores across all four scenarios. Fill in weights and likelihoods in each tab to see results here.
+        Scenarios ranked by score. The highest score is your recommended choice.
       </p>
 
-      {!hasAnyData && (
-        <div className="text-center py-16 text-slate-400 text-sm">
-          No scores yet — go to each scenario tab and fill in weights and likelihoods.
-        </div>
-      )}
+      {results.map(({ scenario, score }, i) => {
+        const isTop = score.isValid && score.score === topScore;
+        const rank = score.isValid ? i + 1 : null;
 
-      <div className="grid grid-cols-1 gap-4">
-        {results.map(({ scenario, scoreA, scoreB, winner }) => (
+        return (
           <div
             key={scenario.id}
-            className="rounded-xl border border-slate-200 bg-white overflow-hidden"
+            className={`rounded-xl border p-5 flex items-center gap-5 ${
+              isTop
+                ? "border-emerald-400 bg-emerald-50"
+                : "border-slate-200 bg-white"
+            }`}
           >
-            {/* Scenario header */}
-            <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
-              <h3 className="font-semibold text-slate-800">{scenario.label}</h3>
+            {/* Rank badge */}
+            <div className={`text-2xl font-bold w-8 text-center shrink-0 ${
+              isTop ? "text-emerald-600" : "text-slate-300"
+            }`}>
+              {rank ?? "—"}
             </div>
 
-            <div className="px-5 py-4 flex gap-4">
-              {/* School A */}
-              <div className={`flex-1 rounded-lg p-4 ${winner === scenario.schoolA ? "bg-emerald-50 border border-emerald-300" : "bg-slate-50 border border-slate-200"}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold text-blue-700">{scenario.schoolA}</span>
-                  {winner === scenario.schoolA && (
-                    <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-semibold">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                {scoreA.isValid ? (
-                  <>
-                    <div className="text-3xl font-bold text-slate-900">{scoreA.score.toFixed(1)}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      ± {scoreA.sd.toFixed(1)} &nbsp;|&nbsp; CI [{scoreA.ciLow.toFixed(1)} – {scoreA.ciHigh.toFixed(1)}]
-                    </div>
-                    {/* Score bar */}
-                    <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${scoreA.score}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-400 italic mt-1">No data yet</p>
+            {/* Label + bar */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="font-semibold text-slate-800">{scenario.label}</span>
+                {isTop && (
+                  <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-semibold shrink-0">
+                    Recommended
+                  </span>
                 )}
               </div>
-
-              {/* VS divider */}
-              <div className="flex items-center text-slate-300 font-bold text-sm">vs</div>
-
-              {/* School B */}
-              <div className={`flex-1 rounded-lg p-4 ${winner === scenario.schoolB ? "bg-emerald-50 border border-emerald-300" : "bg-slate-50 border border-slate-200"}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold text-violet-700">{scenario.schoolB}</span>
-                  {winner === scenario.schoolB && (
-                    <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-semibold">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                {scoreB.isValid ? (
-                  <>
-                    <div className="text-3xl font-bold text-slate-900">{scoreB.score.toFixed(1)}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      ± {scoreB.sd.toFixed(1)} &nbsp;|&nbsp; CI [{scoreB.ciLow.toFixed(1)} – {scoreB.ciHigh.toFixed(1)}]
-                    </div>
-                    {/* Score bar */}
-                    <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-violet-500 rounded-full"
-                        style={{ width: `${scoreB.score}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-400 italic mt-1">No data yet</p>
-                )}
-              </div>
+              {score.isValid ? (
+                <>
+                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
+                      style={{ width: `${score.score}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    95% CI [{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No data yet</p>
+              )}
             </div>
+
+            {/* Score */}
+            {score.isValid && (
+              <div className="text-right shrink-0">
+                <div className="text-3xl font-bold text-slate-900">{score.score.toFixed(1)}</div>
+                <div className="text-xs text-slate-400">± {score.sd.toFixed(1)}</div>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        );
+      })}
 
-      <p className="text-xs text-slate-400">
-        Score = weighted expected value (0–100). Higher score = stronger overall fit for that scenario.
+      <p className="text-xs text-slate-400 pt-2">
+        Score = weighted expected value (0–100) using importance weights and percentage likelihoods.
+        Higher score = stronger overall fit for that combination.
       </p>
     </div>
   );

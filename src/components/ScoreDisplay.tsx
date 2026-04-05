@@ -1,54 +1,35 @@
 import type { SchoolScore } from "@/lib/types";
 
 interface Props {
-  schoolName: string;
+  scenarioLabel: string;
   score: SchoolScore;
-  isRecommended: boolean;
 }
 
-export default function ScoreDisplay({ schoolName, score, isRecommended }: Props) {
+export default function ScoreDisplay({ scenarioLabel, score }: Props) {
   return (
-    <div
-      className={`flex-1 rounded-xl border p-5 ${
-        isRecommended
-          ? "border-emerald-400 bg-emerald-50"
-          : "border-slate-200 bg-slate-50"
-      }`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="font-semibold text-slate-800 text-lg">{schoolName}</h3>
-        {isRecommended && (
-          <span className="text-xs font-semibold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
-            Recommended
-          </span>
-        )}
-      </div>
-
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+      <h3 className="font-semibold text-slate-700 text-sm mb-3">{scenarioLabel} — Score</h3>
       {score.isValid ? (
-        <>
-          <div className="flex items-baseline gap-1 mb-1">
-            <span className="text-4xl font-bold text-slate-900">
-              {score.score.toFixed(1)}
-            </span>
-            <span className="text-slate-500 text-sm">/ 100</span>
-          </div>
-          <div className="text-sm text-slate-600 space-y-0.5">
-            <div>
-              <span className="text-slate-400">SD</span>{" "}
-              <span className="font-medium">± {score.sd.toFixed(1)}</span>
+        <div className="flex items-end gap-6">
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold text-slate-900">{score.score.toFixed(1)}</span>
+              <span className="text-slate-400 text-sm">/ 100</span>
             </div>
-            <div>
-              <span className="text-slate-400">95% CI</span>{" "}
-              <span className="font-medium">
-                [{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]
-              </span>
+            <div className="mt-1 h-2 w-48 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full"
+                style={{ width: `${score.score}%` }}
+              />
             </div>
           </div>
-        </>
+          <div className="text-sm text-slate-500 space-y-0.5 pb-1">
+            <div><span className="text-slate-400">SD</span> <span className="font-medium">± {score.sd.toFixed(1)}</span></div>
+            <div><span className="text-slate-400">95% CI</span> <span className="font-medium">[{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]</span></div>
+          </div>
+        </div>
       ) : (
-        <p className="text-sm text-slate-400 italic mt-1">
-          Add weights and likelihoods to see a score
-        </p>
+        <p className="text-sm text-slate-400 italic">Add importance weights and likelihoods to see a score.</p>
       )}
     </div>
   );

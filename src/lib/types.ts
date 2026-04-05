@@ -2,8 +2,7 @@ export interface Variable {
   id: string;
   name: string;
   weight: number;
-  likelihoodA: number | null; // 1–10, null = not set
-  likelihoodB: number | null;
+  likelihood: number | null; // 0–100 percentage points, null = not set
   isPreset: boolean;
 }
 
@@ -34,6 +33,4 @@ export interface SchoolScore {
 export interface ScenarioMeta {
   id: ScenarioId;
   label: string;
-  schoolA: string;
-  schoolB: string;
 }

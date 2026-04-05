@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SCENARIOS, buildDefaultAppData } from "@/lib/constants";
+import { SCENARIOS } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
 import SummaryView from "./SummaryView";
 import type { AppData, ScenarioData, ScenarioId } from "@/lib/types";
@@ -83,7 +83,7 @@ export default function ScenarioTabs({ initialData }: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [appData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appData]);
 
   function handleScenarioUpdate(updated: ScenarioData) {
     setAppData((prev) => ({
@@ -179,8 +179,7 @@ export default function ScenarioTabs({ initialData }: Props) {
               <ScenarioTable
                 key={activeTab}
                 scenarioData={appData.scenarios[activeTab as ScenarioId]}
-                schoolA={activeScenario.schoolA}
-                schoolB={activeScenario.schoolB}
+                label={activeScenario.label}
                 onUpdate={handleScenarioUpdate}
               />
             </>

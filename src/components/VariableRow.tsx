@@ -4,35 +4,9 @@ interface Props {
   variable: Variable;
   onUpdateName: (id: string, name: string) => void;
   onUpdateWeight: (id: string, value: string) => void;
-  onUpdateLikelihood: (id: string, school: "A" | "B", value: number | null) => void;
+  onUpdateLikelihood: (id: string, value: number | null) => void;
   onDelete: (id: string) => void;
   totalWeight: number;
-}
-
-function LikelihoodInput({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number | null) => void;
-}) {
-  return (
-    <input
-      type="number"
-      min={1}
-      max={10}
-      step={1}
-      value={value ?? ""}
-      placeholder="1–10"
-      onChange={(e) => {
-        const raw = parseInt(e.target.value, 10);
-        if (e.target.value === "") { onChange(null); return; }
-        const clamped = Math.min(10, Math.max(1, raw));
-        onChange(isNaN(clamped) ? null : clamped);
-      }}
-      className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
-    />
-  );
 }
 
 export default function VariableRow({
@@ -75,20 +49,26 @@ export default function VariableRow({
         />
       </td>
 
-      {/* Likelihood A */}
+      {/* Likelihood % */}
       <td className="py-2 px-2 w-32">
-        <LikelihoodInput
-          value={variable.likelihoodA}
-          onChange={(v) => onUpdateLikelihood(variable.id, "A", v)}
-        />
-      </td>
-
-      {/* Likelihood B */}
-      <td className="py-2 px-2 w-32">
-        <LikelihoodInput
-          value={variable.likelihoodB}
-          onChange={(v) => onUpdateLikelihood(variable.id, "B", v)}
-        />
+        <div className="relative">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={variable.likelihood ?? ""}
+            placeholder="0–100"
+            onChange={(e) => {
+              if (e.target.value === "") { onUpdateLikelihood(variable.id, null); return; }
+              const raw = parseInt(e.target.value, 10);
+              const clamped = Math.min(100, Math.max(0, raw));
+              onUpdateLikelihood(variable.id, isNaN(clamped) ? null : clamped);
+            }}
+            className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-7 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+        </div>
       </td>
 
       {/* Delete */}

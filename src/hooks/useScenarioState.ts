@@ -7,7 +7,6 @@ export function useScenarioState(initialData: ScenarioData) {
   const [variables, setVariables] = useState<Variable[]>(initialData.variables);
 
   const totalWeight = variables.reduce((s, v) => s + v.weight, 0);
-  const weightRemaining = 100 - totalWeight;
 
   function updateWeight(id: string, rawValue: string) {
     const parsed = parseInt(rawValue, 10);
@@ -23,13 +22,9 @@ export function useScenarioState(initialData: ScenarioData) {
     setVariables((prev) => prev.map((v) => (v.id === id ? { ...v, name } : v)));
   }
 
-  function updateLikelihood(id: string, school: "A" | "B", value: number | null) {
+  function updateLikelihood(id: string, value: number | null) {
     setVariables((prev) =>
-      prev.map((v) =>
-        v.id === id
-          ? { ...v, [school === "A" ? "likelihoodA" : "likelihoodB"]: value }
-          : v
-      )
+      prev.map((v) => (v.id === id ? { ...v, likelihood: value } : v))
     );
   }
 
@@ -40,8 +35,7 @@ export function useScenarioState(initialData: ScenarioData) {
         id: crypto.randomUUID(),
         name: "",
         weight: 0,
-        likelihoodA: null,
-        likelihoodB: null,
+        likelihood: null,
         isPreset: false,
       },
     ]);
@@ -55,15 +49,5 @@ export function useScenarioState(initialData: ScenarioData) {
     return { scenarioId: initialData.scenarioId, variables };
   }
 
-  return {
-    variables,
-    totalWeight,
-    weightRemaining,
-    updateWeight,
-    updateName,
-    updateLikelihood,
-    addRow,
-    deleteRow,
-    getScenarioData,
-  };
+  return { variables, totalWeight, updateWeight, updateName, updateLikelihood, addRow, deleteRow, getScenarioData };
 }
