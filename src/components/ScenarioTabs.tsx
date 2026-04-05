@@ -58,11 +58,29 @@ export default function ScenarioTabs({ initialData }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("median");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
+  const suppressNextSave = useRef(false);
+
+  // On mount: if SSR didn't return saved data, try fetching from the API directly.
+  // This covers mobile/other devices where localStorage is empty but Redis has data.
+  useEffect(() => {
+    if (initialData.lastSaved) return; // SSR already gave us good data
+    fetch("/api/data")
+      .then((r) => r.json())
+      .then((data: AppData) => {
+        if (data?.lastSaved) {
+          suppressNextSave.current = true;
+          setAppData(data);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-save on actual appData changes only.
   // CRITICAL: never call setAppData inside this effect — that would cause an infinite loop.
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (suppressNextSave.current) { suppressNextSave.current = false; return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
