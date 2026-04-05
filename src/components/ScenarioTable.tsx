@@ -52,7 +52,7 @@ export default function ScenarioTable({
                 Level of Importance
               </th>
               <th className="text-center text-xs font-semibold text-blue-600 uppercase tracking-wide py-3 px-2 w-52">
-                Likelihood range (%)
+                Score range (%)
               </th>
               <th className="w-8" />
             </tr>
@@ -94,7 +94,7 @@ export default function ScenarioTable({
       <ScoreDisplay scenarioLabel={label} score={score} />
 
       <p className="text-xs text-slate-400 leading-relaxed">
-        Score = weighted expected value (0–100) using the midpoint of each likelihood range. SD and 95% CI use a Bernoulli variance model.
+        Score = weighted expected value (0–100) using the midpoint of each score range. SD and 95% CI use a Bernoulli variance model.
         Compare scores across tabs on the Summary page.
       </p>
     </div>

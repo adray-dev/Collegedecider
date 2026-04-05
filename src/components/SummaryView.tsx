@@ -125,7 +125,7 @@ export default function SummaryView({ appData, sortKey, onSortChange }: Props) {
       })}
 
       <p className="text-xs text-slate-400 pt-2">
-        Score = weighted expected value (0–100) using importance weights and the midpoint of each likelihood range.
+        Score = weighted expected value (0–100) using importance weights and the midpoint of each score range.
         Higher score = stronger overall fit for that combination.
       </p>
     </div>
