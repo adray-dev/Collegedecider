@@ -1,25 +1,21 @@
-"use client";
-
-import { useState } from "react";
 import { computeScore } from "@/lib/calculations";
 import { SCENARIOS } from "@/lib/constants";
 import type { AppData } from "@/lib/types";
+import type { SortKey } from "./ScenarioTabs";
 
 interface Props {
   appData: AppData;
+  sortKey: SortKey;
+  onSortChange: (key: SortKey) => void;
 }
 
-type SortKey = "midpoint" | "min" | "max";
-
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "midpoint", label: "Midpoint" },
-  { key: "min",      label: "Minimum" },
-  { key: "max",      label: "Maximum" },
+  { key: "median", label: "Median" },
+  { key: "min",    label: "Minimum" },
+  { key: "max",    label: "Maximum" },
 ];
 
-export default function SummaryView({ appData }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>("midpoint");
-
+export default function SummaryView({ appData, sortKey, onSortChange }: Props) {
   const raw = SCENARIOS.map((scenario) => ({
     scenario,
     score: computeScore(appData.variables, appData.scenarios[scenario.id].entries),
@@ -27,18 +23,16 @@ export default function SummaryView({ appData }: Props) {
 
   const getSortScore = (s: typeof raw[0]) => {
     if (!s.score.isValid) return -Infinity;
-    if (sortKey === "min")      return s.score.scoreMin;
-    if (sortKey === "max")      return s.score.scoreMax;
+    if (sortKey === "min") return s.score.scoreMin;
+    if (sortKey === "max") return s.score.scoreMax;
     return s.score.scoreAvg;
   };
 
   const results = [...raw].sort((a, b) => getSortScore(b) - getSortScore(a));
+  const validResults = results.filter((r) => r.score.isValid);
+  const topSortScore = validResults.length > 0 ? getSortScore(validResults[0]) : null;
 
-  const validSortScores = results.filter((r) => r.score.isValid).map((r) => getSortScore(r));
-  const topSortScore = validSortScores.length > 0 ? validSortScores[0] : null;
-  const getRank = (_: unknown, i: number) => i + 1;
-
-  if (validSortScores.length === 0) {
+  if (validResults.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400 text-sm">
         No scores yet — go to each scenario tab and fill in importance weights and likelihoods.
@@ -57,7 +51,7 @@ export default function SummaryView({ appData }: Props) {
           {SORT_OPTIONS.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setSortKey(key)}
+              onClick={() => onSortChange(key)}
               className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
                 sortKey === key
                   ? "bg-slate-800 text-white shadow-sm"
@@ -72,7 +66,7 @@ export default function SummaryView({ appData }: Props) {
 
       {results.map(({ scenario, score }, i) => {
         const isTop = score.isValid && getSortScore({ scenario, score }) === topSortScore;
-        const rank = score.isValid ? getRank(null, i) : null;
+        const rank = score.isValid ? i + 1 : null;
 
         return (
           <div

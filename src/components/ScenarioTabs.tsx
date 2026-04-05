@@ -9,6 +9,7 @@ import type { AppData, ScenarioId, LikelihoodRange } from "@/lib/types";
 const LS_KEY = "college-decider:app-data";
 
 type ActiveTab = ScenarioId | "summary";
+export type SortKey = "median" | "min" | "max";
 
 interface Props {
   initialData: AppData;
@@ -54,6 +55,7 @@ export default function ScenarioTabs({ initialData }: Props) {
   });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
+  const [sortKey, setSortKey] = useState<SortKey>("median");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
@@ -220,7 +222,7 @@ export default function ScenarioTabs({ initialData }: Props) {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
           <div className={activeTab === "summary" ? "" : "hidden"}>
             <h2 className="text-lg font-semibold text-slate-800 mb-5">All Scenarios — Summary</h2>
-            <SummaryView appData={appData} />
+            <SummaryView appData={appData} sortKey={sortKey} onSortChange={setSortKey} />
           </div>
 
           {SCENARIOS.map((scenario) => (
