@@ -9,48 +9,76 @@ interface Props {
 }
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "median",  label: "Median"  },
-  { key: "min",     label: "Minimum" },
-  { key: "max",     label: "Maximum" },
+  { key: "median", label: "Median" },
+  { key: "min",    label: "Minimum" },
+  { key: "max",    label: "Maximum" },
 ];
+
+// Color palette per session index — no red, no green
+export const SESSION_COLORS = [
+  {
+    headerBg:   "bg-indigo-600",
+    headerText: "text-white",
+    cardBg:     "bg-indigo-50",
+    cardBorder: "border-indigo-200",
+    bar:        "bg-indigo-500",
+    label:      "text-indigo-700",
+    tabActive:  "bg-indigo-600 text-white shadow-sm",
+  },
+  {
+    headerBg:   "bg-sky-500",
+    headerText: "text-white",
+    cardBg:     "bg-sky-50",
+    cardBorder: "border-sky-200",
+    bar:        "bg-sky-400",
+    label:      "text-sky-700",
+    tabActive:  "bg-sky-500 text-white shadow-sm",
+  },
+  {
+    headerBg:   "bg-violet-500",
+    headerText: "text-white",
+    cardBg:     "bg-violet-50",
+    cardBorder: "border-violet-200",
+    bar:        "bg-violet-400",
+    label:      "text-violet-700",
+    tabActive:  "bg-violet-500 text-white shadow-sm",
+  },
+] as const;
 
 export default function GlobalSummaryView({ sessions }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("median");
 
-  // Build flat list of all session × scenario combinations
-  const raw = sessions.flatMap((session) =>
+  // For each session, compute + rank all 4 scenario scores
+  const sessionRankings = sessions.map((session) =>
     SCENARIOS.map((scenario) => ({
-      sessionName: session.name,
       scenarioLabel: scenario.label,
-      key: `${session.id}-${scenario.id}`,
       score: computeScore(
         session.appData.variables,
         session.appData.scenarios[scenario.id].entries
       ),
-    }))
+    })).sort((a, b) => {
+      const val = (s: typeof a) => {
+        if (!s.score.isValid) return -Infinity;
+        if (sortKey === "min") return s.score.scoreMin;
+        if (sortKey === "max") return s.score.scoreMax;
+        return s.score.scoreAvg;
+      };
+      return val(b) - val(a);
+    })
   );
 
-  const getSortScore = (entry: typeof raw[0]) => {
-    if (!entry.score.isValid) return -Infinity;
-    if (sortKey === "min") return entry.score.scoreMin;
-    if (sortKey === "max") return entry.score.scoreMax;
-    return entry.score.scoreAvg;
-  };
-
-  const results = [...raw].sort((a, b) => getSortScore(b) - getSortScore(a));
-  const validResults = results.filter((r) => r.score.isValid);
-  const topScore = validResults.length > 0 ? getSortScore(validResults[0]) : null;
-
-  const displayScore = (entry: typeof raw[0]) => {
-    if (!entry.score.isValid) return 0;
-    if (sortKey === "min") return entry.score.scoreMin;
-    if (sortKey === "max") return entry.score.scoreMax;
-    return entry.score.scoreAvg;
+  const displayVal = (score: ReturnType<typeof computeScore>): number | null => {
+    if (!score.isValid) return null;
+    if (sortKey === "min") return score.scoreMin;
+    if (sortKey === "max") return score.scoreMax;
+    return score.scoreAvg;
   };
 
   const displayLabel = sortKey === "min" ? "min" : sortKey === "max" ? "max" : "median";
 
-  if (validResults.length === 0) {
+  const hasAnyData = sessionRankings.some((ranks) => ranks.some((r) => r.score.isValid));
+
+  if (!hasAnyData) {
     return (
       <div className="text-center py-16 text-slate-400 text-sm">
         No scores yet — fill in weights and score ranges in each test tab.
@@ -59,11 +87,11 @@ export default function GlobalSummaryView({ sessions }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header + sort toggle */}
+    <div className="space-y-5">
+      {/* Sort toggle */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <p className="text-sm text-slate-500">
-          All scenarios across all tests, sorted by{" "}
+          Each test&apos;s scenarios ranked independently by{" "}
           <span className="font-medium text-slate-700">{sortKey}</span> score.
         </p>
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
@@ -83,70 +111,73 @@ export default function GlobalSummaryView({ sessions }: Props) {
         </div>
       </div>
 
-      {results.map((entry, i) => {
-        const isTop = entry.score.isValid && getSortScore(entry) === topScore;
-        const rank = entry.score.isValid ? i + 1 : null;
-        const ds = displayScore(entry);
+      {/* Grid: [rank label] [session 1] [session 2] [session 3] */}
+      <div className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-x-3 gap-y-2">
 
-        return (
-          <div
-            key={entry.key}
-            className={`rounded-xl border p-5 flex items-center gap-5 ${
-              isTop ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"
-            }`}
-          >
-            {/* Rank */}
-            <div className={`text-2xl font-bold w-8 text-center shrink-0 ${isTop ? "text-emerald-600" : "text-slate-300"}`}>
-              {rank ?? "—"}
+        {/* Column headers */}
+        <div /> {/* rank label column — empty */}
+        {sessions.map((session, si) => {
+          const c = SESSION_COLORS[si % SESSION_COLORS.length];
+          return (
+            <div
+              key={session.id}
+              className={`${c.headerBg} ${c.headerText} text-sm font-semibold px-3 py-2 rounded-lg text-center truncate`}
+            >
+              {session.name}
+            </div>
+          );
+        })}
+
+        {/* One row per rank */}
+        {Array.from({ length: SCENARIOS.length }, (_, rank) => (
+          <>
+            {/* Rank badge */}
+            <div key={`label-${rank}`} className="flex items-center justify-center self-stretch">
+              <span className="text-xs font-bold text-slate-400">#{rank + 1}</span>
             </div>
 
-            <div className="flex-1 min-w-0">
-              {/* Test badge + scenario label */}
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full shrink-0">
-                  {entry.sessionName}
-                </span>
-                <span className="font-semibold text-slate-800 text-sm">{entry.scenarioLabel}</span>
-                {isTop && (
-                  <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-semibold shrink-0">
-                    Top overall
-                  </span>
-                )}
-              </div>
+            {/* Cell for each session */}
+            {sessions.map((session, si) => {
+              const entry = sessionRankings[si][rank];
+              const ds = entry ? displayVal(entry.score) : null;
+              const c = SESSION_COLORS[si % SESSION_COLORS.length];
 
-              {entry.score.isValid ? (
-                <>
-                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
-                      style={{ width: `${ds}%` }}
-                    />
+              return (
+                <div
+                  key={`${session.id}-rank${rank}`}
+                  className={`rounded-xl border p-3 ${c.cardBorder} ${c.cardBg}`}
+                >
+                  <div className={`text-xs font-semibold ${c.label} mb-1.5 leading-snug`}>
+                    {entry?.scenarioLabel ?? "—"}
                   </div>
-                  <div className="text-xs text-slate-500 font-medium mt-1">
-                    Range: {entry.score.scoreMin.toFixed(1)} – {entry.score.scoreMax.toFixed(1)}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    SD ± {entry.score.sd.toFixed(1)} &nbsp;·&nbsp; 95% CI [{entry.score.ciLow.toFixed(1)} – {entry.score.ciHigh.toFixed(1)}]
-                  </div>
-                </>
-              ) : (
-                <p className="text-xs text-slate-400 italic">No data yet</p>
-              )}
-            </div>
 
-            {/* Score number */}
-            {entry.score.isValid && (
-              <div className="text-right shrink-0">
-                <div className="text-3xl font-bold text-slate-900">{ds.toFixed(1)}</div>
-                <div className="text-xs text-slate-400">{displayLabel} / 100</div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+                  {entry?.score.isValid && ds !== null ? (
+                    <>
+                      <div className="h-1.5 bg-white/70 rounded-full overflow-hidden mb-1.5">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${c.bar}`}
+                          style={{ width: `${ds}%` }}
+                        />
+                      </div>
+                      <div className="text-xl font-bold text-slate-800 leading-none">
+                        {ds.toFixed(1)}
+                      </div>
+                      <div className={`text-xs ${c.label} mt-0.5 opacity-75`}>
+                        {displayLabel} / 100
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">No data</p>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        ))}
+      </div>
 
-      <p className="text-xs text-slate-400 pt-2">
-        Showing all {raw.length} scenario × test combinations. Higher score = stronger overall fit.
+      <p className="text-xs text-slate-400 pt-1">
+        Scores reflect each test&apos;s own weights — rankings are not compared across tests.
       </p>
     </div>
   );

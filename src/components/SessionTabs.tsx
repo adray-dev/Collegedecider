@@ -8,7 +8,7 @@ import {
   SCENARIO_IDS,
 } from "@/lib/constants";
 import ScenarioTabs from "./ScenarioTabs";
-import GlobalSummaryView from "./GlobalSummaryView";
+import GlobalSummaryView, { SESSION_COLORS } from "./GlobalSummaryView";
 import type { AllSessionsData, AppData, Session } from "@/lib/types";
 
 const LS_NEW_KEY = "college-decider:sessions";
@@ -179,7 +179,7 @@ export default function SessionTabs({ initialData }: Props) {
               onDoubleClick={() => startRename(i)}
               className={`flex-1 whitespace-nowrap text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
                 activeIdx === i
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? SESSION_COLORS[i % SESSION_COLORS.length].tabActive
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
