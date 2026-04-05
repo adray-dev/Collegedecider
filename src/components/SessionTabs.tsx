@@ -11,8 +11,9 @@ import ScenarioTabs from "./ScenarioTabs";
 import GlobalSummaryView, { SESSION_COLORS } from "./GlobalSummaryView";
 import type { AllSessionsData, AppData, Session } from "@/lib/types";
 
-const LS_NEW_KEY = "college-decider:sessions";
-const LS_OLD_KEY = "college-decider:app-data";
+const LS_NEW_KEY = "college-decider:sessions-v2";
+const LS_V1_KEY  = "college-decider:sessions";     // 3-session format — migrate on first load
+const LS_OLD_KEY = "college-decider:app-data";     // original single-session format
 
 interface Props {
   initialData: AllSessionsData;
@@ -20,7 +21,7 @@ interface Props {
 
 function loadFromStorage(): AllSessionsData | null {
   try {
-    // Try new key first
+    // Try current key (v2) first
     const raw = localStorage.getItem(LS_NEW_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as AllSessionsData;
@@ -28,7 +29,15 @@ function loadFromStorage(): AllSessionsData | null {
         return sanitizeAllSessionsData(parsed);
       }
     }
-    // Fall back to old single-session key and migrate
+    // Fall back to v1 key (3 sessions) — sanitize will fill slots 4-8 from session 0
+    const v1Raw = localStorage.getItem(LS_V1_KEY);
+    if (v1Raw) {
+      const v1Parsed = JSON.parse(v1Raw) as AllSessionsData;
+      if (Array.isArray(v1Parsed?.sessions) && v1Parsed.sessions.length > 0) {
+        return sanitizeAllSessionsData(v1Parsed);
+      }
+    }
+    // Fall back to original single-session key and migrate
     const oldRaw = localStorage.getItem(LS_OLD_KEY);
     if (oldRaw) {
       const oldParsed = JSON.parse(oldRaw);

@@ -101,14 +101,29 @@ export function migrateToAllSessionsData(appData: AppData): AllSessionsData {
   };
 }
 
-/** Apply sanitizeAppData to every session; fill in missing sessions with defaults. */
+/** Apply sanitizeAppData to every session; fill new slots with a copy of session 0. */
 export function sanitizeAllSessionsData(data: AllSessionsData): AllSessionsData {
+  const existingCount = Array.isArray(data.sessions) ? data.sessions.length : 0;
+  // Sanitized session-0 data used as the template for any new session slots
+  const templateAppData: AppData =
+    existingCount > 0 && data.sessions[0]?.appData
+      ? sanitizeAppData(data.sessions[0].appData)
+      : buildDefaultAppData();
+
   const sessions: Session[] = DEFAULT_SESSION_NAMES.map((name, i) => {
     const existing = data.sessions?.[i];
+    if (existing) {
+      return {
+        id: existing.id ?? `session-${i + 1}`,
+        name: existing.name ?? name,
+        appData: sanitizeAppData(existing.appData),
+      };
+    }
+    // New slot — initialize as a deep copy of session 1's data
     return {
-      id: existing?.id ?? `session-${i + 1}`,
-      name: existing?.name ?? name,
-      appData: existing?.appData ? sanitizeAppData(existing.appData) : buildDefaultAppData(),
+      id: `session-${i + 1}`,
+      name,
+      appData: JSON.parse(JSON.stringify(templateAppData)) as AppData,
     };
   });
   return { sessions, lastSaved: data.lastSaved ?? null };
