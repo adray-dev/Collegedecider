@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { computeScore } from "@/lib/calculations";
 import { SCENARIOS } from "@/lib/constants";
 import type { AppData } from "@/lib/types";
@@ -6,22 +9,36 @@ interface Props {
   appData: AppData;
 }
 
+type SortKey = "midpoint" | "min" | "max";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "midpoint", label: "Midpoint" },
+  { key: "min",      label: "Minimum" },
+  { key: "max",      label: "Maximum" },
+];
+
 export default function SummaryView({ appData }: Props) {
-  const results = SCENARIOS.map((scenario) => ({
+  const [sortKey, setSortKey] = useState<SortKey>("midpoint");
+
+  const raw = SCENARIOS.map((scenario) => ({
     scenario,
     score: computeScore(appData.variables, appData.scenarios[scenario.id].entries),
-  })).sort((a, b) => {
-    if (!a.score.isValid && !b.score.isValid) return 0;
-    if (!a.score.isValid) return 1;
-    if (!b.score.isValid) return -1;
-    return b.score.scoreAvg - a.score.scoreAvg;
-  });
+  }));
 
-  const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.scoreAvg);
-  const topScore = validScores.length > 0 ? Math.max(...validScores) : null;
-  const getRank = (avg: number) => validScores.indexOf(avg) + 1;
+  const getSortScore = (s: typeof raw[0]) => {
+    if (!s.score.isValid) return -Infinity;
+    if (sortKey === "min")      return s.score.scoreMin;
+    if (sortKey === "max")      return s.score.scoreMax;
+    return s.score.scoreAvg;
+  };
 
-  if (validScores.length === 0) {
+  const results = [...raw].sort((a, b) => getSortScore(b) - getSortScore(a));
+
+  const validSortScores = results.filter((r) => r.score.isValid).map((r) => getSortScore(r));
+  const topSortScore = validSortScores.length > 0 ? validSortScores[0] : null;
+  const getRank = (_: unknown, i: number) => i + 1;
+
+  if (validSortScores.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400 text-sm">
         No scores yet — go to each scenario tab and fill in importance weights and likelihoods.
@@ -31,13 +48,31 @@ export default function SummaryView({ appData }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        Scenarios sorted by average score. The highest score is your recommended choice.
-      </p>
+      {/* Header row: description + sort toggle */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-sm text-slate-500">
+          Sorted by <span className="font-medium text-slate-700">{sortKey}</span> score. The highest score is your recommended choice.
+        </p>
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
+          {SORT_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setSortKey(key)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+                sortKey === key
+                  ? "bg-slate-800 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {results.map(({ scenario, score }) => {
-        const isTop = score.isValid && score.scoreAvg === topScore;
-        const rank = score.isValid ? getRank(score.scoreAvg) : null;
+      {results.map(({ scenario, score }, i) => {
+        const isTop = score.isValid && getSortScore({ scenario, score }) === topSortScore;
+        const rank = score.isValid ? getRank(null, i) : null;
 
         return (
           <div
@@ -67,11 +102,9 @@ export default function SummaryView({ appData }: Props) {
                       style={{ width: `${score.scoreAvg}%` }}
                     />
                   </div>
-                  {/* Range — medium */}
                   <div className="text-xs text-slate-500 font-medium mt-1">
                     Range: {score.scoreMin.toFixed(1)} – {score.scoreMax.toFixed(1)}
                   </div>
-                  {/* SD/CI — small */}
                   <div className="text-xs text-slate-400 mt-0.5">
                     SD ± {score.sd.toFixed(1)} &nbsp;·&nbsp; 95% CI [{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]
                   </div>
