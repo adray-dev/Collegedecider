@@ -8,7 +8,6 @@ import type { AppData, ScenarioId } from "@/lib/types";
 
 const LS_KEY = "college-decider:app-data";
 
-type SaveState = "idle" | "saving" | "saved" | "error";
 type ActiveTab = ScenarioId | "summary";
 
 interface Props {
@@ -48,10 +47,7 @@ export default function ScenarioTabs({ initialData }: Props) {
     return local ?? buildDefaultAppData();
   });
 
-  // lastSaved is tracked separately so updating it never re-triggers the save effect
-  const [lastSaved, setLastSaved] = useState<string | null>(appData.lastSaved ?? null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
-  const [saveState, setSaveState] = useState<SaveState>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
@@ -60,17 +56,15 @@ export default function ScenarioTabs({ initialData }: Props) {
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    setSaveState("saving");
 
     debounceRef.current = setTimeout(async () => {
       const timestamp = new Date().toISOString();
       const dataToSave = { ...appData, lastSaved: timestamp };
 
-      // Save to localStorage immediately — this is the primary persistence layer
+      // Save to localStorage immediately — primary persistence layer
       saveToLocalStorage(dataToSave);
-      setLastSaved(timestamp);
 
-      // Attempt server save (requires Upstash env vars)
+      // Attempt server save silently (requires Upstash env vars)
       try {
         const res = await fetch("/api/data", {
           method: "POST",
@@ -78,14 +72,9 @@ export default function ScenarioTabs({ initialData }: Props) {
           body: JSON.stringify(dataToSave),
         });
         if (!res.ok) throw new Error();
-        const json = await res.json();
-        if (json.lastSaved) setLastSaved(json.lastSaved);
       } catch {
         // Server unavailable — localStorage save already completed above
       }
-
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 2000);
     }, 1000);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
@@ -181,44 +170,17 @@ export default function ScenarioTabs({ initialData }: Props) {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const statusLabel: Record<SaveState, string> = {
-    idle: "", saving: "Saving…", saved: "Saved", error: "Save failed",
-  };
-  const statusColor: Record<SaveState, string> = {
-    idle: "", saving: "text-slate-400", saved: "text-emerald-600", error: "text-red-500",
-  };
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Grad School Decision Calculator</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Assign weights to what matters to you, then rate each outcome&apos;s likelihood per combination.
-            </p>
-            <p className="text-sm text-blue-700 mt-2">
-              <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
-              100). Then rate how likely each outcome is for this combination (0–100%). Adding or removing
-              a variable updates it across all scenario tabs.
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className={`text-sm font-medium transition-colors ${statusColor[saveState]}`}>
-              {saveState === "saved" && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
-              {statusLabel[saveState]}
-            </span>
-            {lastSaved && saveState === "idle" && (
-              <span className="text-xs text-slate-400">
-                Last saved {new Date(lastSaved).toLocaleString()}
-              </span>
-            )}
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Grad School Decision Calculator</h1>
+          <p className="text-sm text-blue-700 mt-2">
+            <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
+            100). Then rate how likely each outcome is for this combination (0–100%). Adding or removing
+            a variable updates it across all scenario tabs.
+          </p>
         </div>
 
         {/* Tabs */}
