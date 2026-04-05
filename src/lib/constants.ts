@@ -1,4 +1,4 @@
-import type { ScenarioId, ScenarioMeta, AppData, VariableDef } from "./types";
+import type { ScenarioId, ScenarioMeta, AppData, VariableDef, Session, AllSessionsData } from "./types";
 
 export const PRESET_VARIABLE_NAMES: string[] = [
   "Ideal PhD advising (academic fit)",
@@ -71,4 +71,43 @@ export function sanitizeAppData(data: AppData): AppData {
   ) as AppData["scenarios"];
 
   return { variables, scenarios, lastSaved: data.lastSaved ?? null };
+}
+
+export const DEFAULT_SESSION_NAMES = ["Test 1", "Test 2", "Test 3"] as const;
+
+export function buildDefaultAllSessionsData(): AllSessionsData {
+  return {
+    sessions: DEFAULT_SESSION_NAMES.map((name, i) => ({
+      id: `session-${i + 1}`,
+      name,
+      appData: buildDefaultAppData(),
+    })),
+    lastSaved: null,
+  };
+}
+
+/** Migrate old single-session AppData → AllSessionsData (sessions 2 & 3 are deep copies of session 1). */
+export function migrateToAllSessionsData(appData: AppData): AllSessionsData {
+  const sanitized = sanitizeAppData(appData);
+  return {
+    sessions: DEFAULT_SESSION_NAMES.map((name, i) => ({
+      id: `session-${i + 1}`,
+      name,
+      appData: JSON.parse(JSON.stringify(sanitized)) as AppData,
+    })),
+    lastSaved: appData.lastSaved ?? null,
+  };
+}
+
+/** Apply sanitizeAppData to every session; fill in missing sessions with defaults. */
+export function sanitizeAllSessionsData(data: AllSessionsData): AllSessionsData {
+  const sessions: Session[] = DEFAULT_SESSION_NAMES.map((name, i) => {
+    const existing = data.sessions?.[i];
+    return {
+      id: existing?.id ?? `session-${i + 1}`,
+      name: existing?.name ?? name,
+      appData: existing?.appData ? sanitizeAppData(existing.appData) : buildDefaultAppData(),
+    };
+  });
+  return { sessions, lastSaved: data.lastSaved ?? null };
 }

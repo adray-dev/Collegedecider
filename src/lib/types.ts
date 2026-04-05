@@ -46,3 +46,14 @@ export interface ScenarioMeta {
   id: ScenarioId;
   label: string;
 }
+
+export interface Session {
+  id: string;    // "session-1" | "session-2" | "session-3"
+  name: string;  // user-editable
+  appData: AppData;
+}
+
+export interface AllSessionsData {
+  sessions: Session[];  // always exactly 3
+  lastSaved: string | null;
+}

@@ -1,16 +1,22 @@
-import { getAppData } from "@/lib/kv";
-import { buildDefaultAppData } from "@/lib/constants";
-import ScenarioTabs from "@/components/ScenarioTabs";
+import { getAllSessionsData, getAppData } from "@/lib/kv";
+import { buildDefaultAllSessionsData, migrateToAllSessionsData } from "@/lib/constants";
+import SessionTabs from "@/components/SessionTabs";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let data;
   try {
-    data = (await getAppData()) ?? buildDefaultAppData();
+    const sessions = await getAllSessionsData();
+    if (sessions?.sessions) {
+      data = sessions;
+    } else {
+      const legacy = await getAppData();
+      data = legacy ? migrateToAllSessionsData(legacy) : buildDefaultAllSessionsData();
+    }
   } catch {
-    data = buildDefaultAppData();
+    data = buildDefaultAllSessionsData();
   }
 
-  return <ScenarioTabs initialData={data} />;
+  return <SessionTabs initialData={data} />;
 }
