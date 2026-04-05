@@ -68,9 +68,9 @@ export default function VariableRow({
       </td>
 
       {/* Likelihood range % */}
-      <td className="py-2 px-2 w-44">
+      <td className="py-2 px-2 w-52">
         <div className="flex items-center gap-1">
-          <div className="relative flex-1">
+          <div className="flex items-center gap-0.5 flex-1">
             <input
               type="number"
               min={0}
@@ -79,12 +79,12 @@ export default function VariableRow({
               value={likMin ?? ""}
               placeholder="0"
               onChange={(e) => handleMin(e.target.value)}
-              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-6 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
+              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
             />
-            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+            <span className="text-slate-400 text-xs shrink-0">%</span>
           </div>
           <span className="text-slate-400 text-xs shrink-0">–</span>
-          <div className="relative flex-1">
+          <div className="flex items-center gap-0.5 flex-1">
             <input
               type="number"
               min={0}
@@ -93,9 +93,9 @@ export default function VariableRow({
               value={likMax ?? ""}
               placeholder="100"
               onChange={(e) => handleMax(e.target.value)}
-              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-6 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
+              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
             />
-            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+            <span className="text-slate-400 text-xs shrink-0">%</span>
           </div>
         </div>
       </td>
