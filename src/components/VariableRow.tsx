@@ -24,25 +24,17 @@ export default function VariableRow({
   const likMax = entry.likelihood?.max ?? null;
 
   function handleMin(raw: string) {
-    if (raw === "") {
-      onUpdateLikelihood(variable.id, null);
-      return;
-    }
-    const val = Math.min(100, Math.max(0, parseInt(raw, 10)));
-    if (isNaN(val)) { onUpdateLikelihood(variable.id, null); return; }
-    const max = Math.max(val, likMax ?? val);
-    onUpdateLikelihood(variable.id, { min: val, max });
+    const val = raw === "" ? null : Math.min(100, Math.max(0, parseInt(raw, 10)));
+    const newMin = val !== null && isNaN(val) ? null : val;
+    if (newMin === null && likMax === null) { onUpdateLikelihood(variable.id, null); return; }
+    onUpdateLikelihood(variable.id, { min: newMin, max: likMax });
   }
 
   function handleMax(raw: string) {
-    if (raw === "") {
-      onUpdateLikelihood(variable.id, null);
-      return;
-    }
-    const val = Math.min(100, Math.max(0, parseInt(raw, 10)));
-    if (isNaN(val)) { onUpdateLikelihood(variable.id, null); return; }
-    const min = Math.min(val, likMin ?? val);
-    onUpdateLikelihood(variable.id, { min, max: val });
+    const val = raw === "" ? null : Math.min(100, Math.max(0, parseInt(raw, 10)));
+    const newMax = val !== null && isNaN(val) ? null : val;
+    if (newMax === null && likMin === null) { onUpdateLikelihood(variable.id, null); return; }
+    onUpdateLikelihood(variable.id, { min: likMin, max: newMax });
   }
 
   return (

@@ -35,20 +35,28 @@ export function computeScore(
 
   const hasAny = variables.some((v) => {
     const e = entries[v.id];
-    return e && e.weight > 0 && e.likelihood !== null;
+    return e && e.weight > 0 && e.likelihood !== null &&
+      (e.likelihood.min !== null || e.likelihood.max !== null);
   });
 
   if (!hasAny) {
     return { scoreAvg: 0, scoreMin: 0, scoreMax: 0, sd: 0, ciLow: 0, ciHigh: 0, isValid: false };
   }
 
-  const { score: scoreMin } = computeScoreForP(variables, entries, (e) => e.likelihood!.min);
-  const { score: scoreMax } = computeScoreForP(variables, entries, (e) => e.likelihood!.max);
-  const { score: scoreAvgRaw, variance } = computeScoreForP(
-    variables,
-    entries,
-    (e) => (e.likelihood!.min + e.likelihood!.max) / 2
-  );
+  // For each side, fall back to the other side if only one is filled
+  const getMin = (e: ScenarioEntry) => {
+    const { min, max } = e.likelihood!;
+    return min ?? max ?? 0;
+  };
+  const getMax = (e: ScenarioEntry) => {
+    const { min, max } = e.likelihood!;
+    return max ?? min ?? 0;
+  };
+  const getMid = (e: ScenarioEntry) => (getMin(e) + getMax(e)) / 2;
+
+  const { score: scoreMin } = computeScoreForP(variables, entries, getMin);
+  const { score: scoreMax } = computeScoreForP(variables, entries, getMax);
+  const { score: scoreAvgRaw, variance } = computeScoreForP(variables, entries, getMid);
 
   const round1 = (n: number) => Math.round(n * 10) / 10;
 

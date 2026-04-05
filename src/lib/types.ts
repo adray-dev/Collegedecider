@@ -5,8 +5,8 @@ export interface VariableDef {
 }
 
 export interface LikelihoodRange {
-  min: number; // 0–100 percentage points
-  max: number; // 0–100 percentage points
+  min: number | null; // 0–100 percentage points
+  max: number | null; // 0–100 percentage points
 }
 
 export interface ScenarioEntry {
