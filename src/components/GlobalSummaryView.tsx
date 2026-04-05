@@ -14,35 +14,16 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "max",    label: "Maximum" },
 ];
 
-// Color palette per session index — no red, no green
+// 8 colors — no red, no green
 export const SESSION_COLORS = [
-  {
-    headerBg:   "bg-indigo-600",
-    headerText: "text-white",
-    cardBg:     "bg-indigo-50",
-    cardBorder: "border-indigo-200",
-    bar:        "bg-indigo-500",
-    label:      "text-indigo-700",
-    tabActive:  "bg-indigo-600 text-white shadow-sm",
-  },
-  {
-    headerBg:   "bg-sky-500",
-    headerText: "text-white",
-    cardBg:     "bg-sky-50",
-    cardBorder: "border-sky-200",
-    bar:        "bg-sky-400",
-    label:      "text-sky-700",
-    tabActive:  "bg-sky-500 text-white shadow-sm",
-  },
-  {
-    headerBg:   "bg-violet-500",
-    headerText: "text-white",
-    cardBg:     "bg-violet-50",
-    cardBorder: "border-violet-200",
-    bar:        "bg-violet-400",
-    label:      "text-violet-700",
-    tabActive:  "bg-violet-500 text-white shadow-sm",
-  },
+  { headerBg: "bg-indigo-600",  cardBg: "bg-indigo-50",  cardBorder: "border-indigo-200",  bar: "bg-indigo-500",  label: "text-indigo-700",  tabActive: "bg-indigo-600 text-white shadow-sm"  },
+  { headerBg: "bg-sky-500",     cardBg: "bg-sky-50",     cardBorder: "border-sky-200",     bar: "bg-sky-400",     label: "text-sky-700",     tabActive: "bg-sky-500 text-white shadow-sm"     },
+  { headerBg: "bg-violet-500",  cardBg: "bg-violet-50",  cardBorder: "border-violet-200",  bar: "bg-violet-400",  label: "text-violet-700",  tabActive: "bg-violet-500 text-white shadow-sm"  },
+  { headerBg: "bg-amber-500",   cardBg: "bg-amber-50",   cardBorder: "border-amber-200",   bar: "bg-amber-400",   label: "text-amber-700",   tabActive: "bg-amber-500 text-white shadow-sm"   },
+  { headerBg: "bg-teal-500",    cardBg: "bg-teal-50",    cardBorder: "border-teal-200",    bar: "bg-teal-400",    label: "text-teal-700",    tabActive: "bg-teal-500 text-white shadow-sm"    },
+  { headerBg: "bg-pink-500",    cardBg: "bg-pink-50",    cardBorder: "border-pink-200",    bar: "bg-pink-400",    label: "text-pink-700",    tabActive: "bg-pink-500 text-white shadow-sm"    },
+  { headerBg: "bg-orange-500",  cardBg: "bg-orange-50",  cardBorder: "border-orange-200",  bar: "bg-orange-400",  label: "text-orange-700",  tabActive: "bg-orange-500 text-white shadow-sm"  },
+  { headerBg: "bg-cyan-500",    cardBg: "bg-cyan-50",    cardBorder: "border-cyan-200",    bar: "bg-cyan-400",    label: "text-cyan-700",    tabActive: "bg-cyan-500 text-white shadow-sm"    },
 ] as const;
 
 export default function GlobalSummaryView({ sessions }: Props) {
@@ -86,6 +67,8 @@ export default function GlobalSummaryView({ sessions }: Props) {
     );
   }
 
+  const numRanks = SCENARIOS.length; // 4
+
   return (
     <div className="space-y-5">
       {/* Sort toggle */}
@@ -111,69 +94,75 @@ export default function GlobalSummaryView({ sessions }: Props) {
         </div>
       </div>
 
-      {/* Grid: [rank label] [session 1] [session 2] [session 3] */}
-      <div className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-x-3 gap-y-2">
+      {/* Grid: rows = sessions, columns = [session label] + [rank 1..4] */}
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-[9rem_1fr_1fr_1fr_1fr] gap-x-3 gap-y-2 min-w-[560px]">
 
-        {/* Column headers */}
-        <div /> {/* rank label column — empty */}
-        {sessions.map((session, si) => {
-          const c = SESSION_COLORS[si % SESSION_COLORS.length];
-          return (
+          {/* Column headers */}
+          <div /> {/* session label column — empty */}
+          {Array.from({ length: numRanks }, (_, rank) => (
             <div
-              key={session.id}
-              className={`${c.headerBg} ${c.headerText} text-sm font-semibold px-3 py-2 rounded-lg text-center truncate`}
+              key={`col-${rank}`}
+              className="text-xs font-bold text-slate-500 uppercase tracking-wide text-center py-1"
             >
-              {session.name}
+              #{rank + 1} Best
             </div>
-          );
-        })}
+          ))}
 
-        {/* One row per rank */}
-        {Array.from({ length: SCENARIOS.length }, (_, rank) => (
-          <>
-            {/* Rank badge */}
-            <div key={`label-${rank}`} className="flex items-center justify-center self-stretch">
-              <span className="text-xs font-bold text-slate-400">#{rank + 1}</span>
-            </div>
+          {/* One row per session */}
+          {sessions.map((session, si) => {
+            const c = SESSION_COLORS[si % SESSION_COLORS.length];
+            const ranks = sessionRankings[si];
 
-            {/* Cell for each session */}
-            {sessions.map((session, si) => {
-              const entry = sessionRankings[si][rank];
-              const ds = entry ? displayVal(entry.score) : null;
-              const c = SESSION_COLORS[si % SESSION_COLORS.length];
-
-              return (
-                <div
-                  key={`${session.id}-rank${rank}`}
-                  className={`rounded-xl border p-3 ${c.cardBorder} ${c.cardBg}`}
-                >
-                  <div className={`text-xs font-semibold ${c.label} mb-1.5 leading-snug`}>
-                    {entry?.scenarioLabel ?? "—"}
-                  </div>
-
-                  {entry?.score.isValid && ds !== null ? (
-                    <>
-                      <div className="h-1.5 bg-white/70 rounded-full overflow-hidden mb-1.5">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${c.bar}`}
-                          style={{ width: `${ds}%` }}
-                        />
-                      </div>
-                      <div className="text-xl font-bold text-slate-800 leading-none">
-                        {ds.toFixed(1)}
-                      </div>
-                      <div className={`text-xs ${c.label} mt-0.5 opacity-75`}>
-                        {displayLabel} / 100
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-xs text-slate-400 italic">No data</p>
-                  )}
+            return (
+              <>
+                {/* Session label pill */}
+                <div key={`label-${session.id}`} className="flex items-center">
+                  <span
+                    className={`${c.headerBg} text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg truncate max-w-full`}
+                  >
+                    {session.name}
+                  </span>
                 </div>
-              );
-            })}
-          </>
-        ))}
+
+                {/* Score cards for each rank position */}
+                {ranks.map((entry, rank) => {
+                  const ds = displayVal(entry.score);
+
+                  return (
+                    <div
+                      key={`${session.id}-rank${rank}`}
+                      className={`rounded-xl border p-2.5 ${c.cardBorder} ${c.cardBg}`}
+                    >
+                      <div className={`text-xs font-semibold ${c.label} mb-1 leading-snug line-clamp-2`}>
+                        {entry.scenarioLabel}
+                      </div>
+
+                      {entry.score.isValid && ds !== null ? (
+                        <>
+                          <div className="h-1.5 bg-white/70 rounded-full overflow-hidden mb-1">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${c.bar}`}
+                              style={{ width: `${ds}%` }}
+                            />
+                          </div>
+                          <div className="text-lg font-bold text-slate-800 leading-none">
+                            {ds.toFixed(1)}
+                          </div>
+                          <div className={`text-xs ${c.label} mt-0.5 opacity-75`}>
+                            {displayLabel} / 100
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">No data</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })}
+        </div>
       </div>
 
       <p className="text-xs text-slate-400 pt-1">

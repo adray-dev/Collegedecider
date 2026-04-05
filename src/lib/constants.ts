@@ -73,7 +73,9 @@ export function sanitizeAppData(data: AppData): AppData {
   return { variables, scenarios, lastSaved: data.lastSaved ?? null };
 }
 
-export const DEFAULT_SESSION_NAMES = ["Test 1", "Test 2", "Test 3"] as const;
+export const DEFAULT_SESSION_NAMES = [
+  "Test 1", "Test 2", "Test 3", "Test 4", "Test 5", "Test 6", "Test 7", "Test 8",
+] as const;
 
 export function buildDefaultAllSessionsData(): AllSessionsData {
   return {

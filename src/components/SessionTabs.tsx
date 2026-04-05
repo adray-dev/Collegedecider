@@ -209,7 +209,7 @@ export default function SessionTabs({ initialData }: Props) {
           </div>
         </div>
 
-        {/* Render all 3 ScenarioTabs instances — hide inactive ones to preserve state */}
+        {/* Render all ScenarioTabs instances — hide inactive ones to preserve state */}
         {sessions.map((session, i) => (
           <div key={session.id} className={activeIdx === i ? "" : "hidden"}>
             <ScenarioTabs
