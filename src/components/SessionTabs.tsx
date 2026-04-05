@@ -8,6 +8,7 @@ import {
   SCENARIO_IDS,
 } from "@/lib/constants";
 import ScenarioTabs from "./ScenarioTabs";
+import GlobalSummaryView from "./GlobalSummaryView";
 import type { AllSessionsData, AppData, Session } from "@/lib/types";
 
 const LS_NEW_KEY = "college-decider:sessions";
@@ -69,7 +70,7 @@ export default function SessionTabs({ initialData }: Props) {
     return chosen.sessions;
   });
 
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState<number | "global">(0);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
 
@@ -158,6 +159,19 @@ export default function SessionTabs({ initialData }: Props) {
 
         {/* Session tab bar */}
         <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-4 overflow-x-auto">
+          {/* Global summary tab */}
+          <button
+            onClick={() => setActiveIdx("global")}
+            className={`whitespace-nowrap text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
+              activeIdx === "global"
+                ? "bg-slate-800 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            All Tests
+          </button>
+
+          {/* Individual session tabs */}
           {sessions.map((session, i) => (
             <button
               key={session.id}
@@ -185,11 +199,19 @@ export default function SessionTabs({ initialData }: Props) {
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-400 mb-6">Double-click a tab to rename it. Each test is fully independent.</p>
+        <p className="text-xs text-slate-400 mb-6">Double-click a test tab to rename it. Each test is fully independent.</p>
+
+        {/* Global summary view */}
+        <div className={activeIdx === "global" ? "" : "hidden"}>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-slate-800 mb-5">All Tests — Combined Summary</h2>
+            <GlobalSummaryView sessions={sessions} />
+          </div>
+        </div>
 
         {/* Render all 3 ScenarioTabs instances — hide inactive ones to preserve state */}
         {sessions.map((session, i) => (
-          <div key={session.id} className={i === activeIdx ? "" : "hidden"}>
+          <div key={session.id} className={activeIdx === i ? "" : "hidden"}>
             <ScenarioTabs
               appData={session.appData}
               onDataChange={(newData) => updateSession(i, newData)}
