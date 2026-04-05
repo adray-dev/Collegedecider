@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SCENARIOS } from "@/lib/constants";
+import { SCENARIOS, buildDefaultAppData } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
 import SummaryView from "./SummaryView";
 import type { AppData, ScenarioData, ScenarioId } from "@/lib/types";
+
+const LS_KEY = "college-decider:app-data";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type ActiveTab = ScenarioId | "summary";
@@ -13,8 +15,31 @@ interface Props {
   initialData: AppData;
 }
 
+function loadFromLocalStorage(): AppData | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AppData;
+  } catch {
+    return null;
+  }
+}
+
+function saveToLocalStorage(data: AppData) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  } catch {
+    // storage quota exceeded — ignore
+  }
+}
+
 export default function ScenarioTabs({ initialData }: Props) {
-  const [appData, setAppData] = useState<AppData>(initialData);
+  // On first render, prefer localStorage over the server default if server has no saved data
+  const [appData, setAppData] = useState<AppData>(() => {
+    if (initialData.lastSaved) return initialData; // server has real data — use it
+    const local = typeof window !== "undefined" ? loadFromLocalStorage() : null;
+    return local ?? initialData;
+  });
   const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,6 +55,10 @@ export default function ScenarioTabs({ initialData }: Props) {
     setSaveState("saving");
 
     debounceRef.current = setTimeout(async () => {
+      // Always save to localStorage immediately as fallback
+      const dataWithTimestamp = { ...appData, lastSaved: new Date().toISOString() };
+      saveToLocalStorage(dataWithTimestamp);
+
       try {
         const res = await fetch("/api/data", {
           method: "POST",
@@ -38,19 +67,23 @@ export default function ScenarioTabs({ initialData }: Props) {
         });
         if (!res.ok) throw new Error("Save failed");
         const json = await res.json();
-        setAppData((prev) => ({ ...prev, lastSaved: json.lastSaved ?? prev.lastSaved }));
+        const saved = { ...appData, lastSaved: json.lastSaved ?? dataWithTimestamp.lastSaved };
+        setAppData(saved);
+        saveToLocalStorage(saved);
         setSaveState("saved");
-        setTimeout(() => setSaveState("idle"), 2000);
       } catch {
-        setSaveState("error");
-        setTimeout(() => setSaveState("idle"), 3000);
+        // Server unavailable — localStorage save already happened
+        setAppData(dataWithTimestamp);
+        setSaveState("saved"); // show saved since localStorage worked
       }
+
+      setTimeout(() => setSaveState("idle"), 2000);
     }, 1000);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [appData]);
+  }, [appData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleScenarioUpdate(updated: ScenarioData) {
     setAppData((prev) => ({
@@ -108,7 +141,6 @@ export default function ScenarioTabs({ initialData }: Props) {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-6 overflow-x-auto">
-          {/* Summary tab */}
           <button
             onClick={() => setActiveTab("summary")}
             className={`whitespace-nowrap text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
@@ -119,8 +151,6 @@ export default function ScenarioTabs({ initialData }: Props) {
           >
             Summary
           </button>
-
-          {/* Scenario tabs */}
           {SCENARIOS.map((scenario) => (
             <button
               key={scenario.id}
@@ -157,12 +187,11 @@ export default function ScenarioTabs({ initialData }: Props) {
           ) : null}
         </div>
 
-        {/* How-to hint */}
         {activeTab !== "summary" && (
           <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-            <strong>How to use:</strong> Set the <em>Weight</em> for each factor (all weights must total
-            100). Then for each school, choose how likely that factor is to be satisfied there. The
-            calculator scores each school and shows a confidence interval based on your ratings.
+            <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
+            100). Then rate how likely each outcome is at each school (1–10). The calculator scores
+            each school and shows a confidence interval based on your ratings.
           </div>
         )}
       </div>
