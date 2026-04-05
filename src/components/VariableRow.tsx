@@ -1,4 +1,4 @@
-import type { VariableDef, ScenarioEntry } from "@/lib/types";
+import type { VariableDef, ScenarioEntry, LikelihoodRange } from "@/lib/types";
 
 interface Props {
   variable: VariableDef;
@@ -6,7 +6,7 @@ interface Props {
   totalWeight: number;
   onUpdateName: (id: string, name: string) => void;
   onUpdateWeight: (id: string, value: string) => void;
-  onUpdateLikelihood: (id: string, value: number | null) => void;
+  onUpdateLikelihood: (id: string, value: LikelihoodRange | null) => void;
   onDelete: (id: string) => void;
 }
 
@@ -20,6 +20,30 @@ export default function VariableRow({
   onDelete,
 }: Props) {
   const budgetExhausted = totalWeight >= 100 && entry.weight === 0;
+  const likMin = entry.likelihood?.min ?? null;
+  const likMax = entry.likelihood?.max ?? null;
+
+  function handleMin(raw: string) {
+    if (raw === "") {
+      onUpdateLikelihood(variable.id, null);
+      return;
+    }
+    const val = Math.min(100, Math.max(0, parseInt(raw, 10)));
+    if (isNaN(val)) { onUpdateLikelihood(variable.id, null); return; }
+    const max = Math.max(val, likMax ?? val);
+    onUpdateLikelihood(variable.id, { min: val, max });
+  }
+
+  function handleMax(raw: string) {
+    if (raw === "") {
+      onUpdateLikelihood(variable.id, null);
+      return;
+    }
+    const val = Math.min(100, Math.max(0, parseInt(raw, 10)));
+    if (isNaN(val)) { onUpdateLikelihood(variable.id, null); return; }
+    const min = Math.min(val, likMin ?? val);
+    onUpdateLikelihood(variable.id, { min, max: val });
+  }
 
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50 group">
@@ -51,25 +75,36 @@ export default function VariableRow({
         />
       </td>
 
-      {/* Likelihood % */}
-      <td className="py-2 px-2 w-32">
-        <div className="relative">
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            value={entry.likelihood ?? ""}
-            placeholder="0–100"
-            onChange={(e) => {
-              if (e.target.value === "") { onUpdateLikelihood(variable.id, null); return; }
-              const raw = parseInt(e.target.value, 10);
-              const clamped = Math.min(100, Math.max(0, raw));
-              onUpdateLikelihood(variable.id, isNaN(clamped) ? null : clamped);
-            }}
-            className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-7 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
-          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+      {/* Likelihood range % */}
+      <td className="py-2 px-2 w-44">
+        <div className="flex items-center gap-1">
+          <div className="relative flex-1">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={likMin ?? ""}
+              placeholder="0"
+              onChange={(e) => handleMin(e.target.value)}
+              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-6 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
+            />
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+          </div>
+          <span className="text-slate-400 text-xs shrink-0">–</span>
+          <div className="relative flex-1">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={likMax ?? ""}
+              placeholder="100"
+              onChange={(e) => handleMax(e.target.value)}
+              className="w-full text-sm text-center border border-slate-200 rounded-md px-2 py-1 pr-6 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 text-slate-700 placeholder:text-slate-300"
+            />
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">%</span>
+          </div>
         </div>
       </td>
 

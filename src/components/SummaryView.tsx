@@ -14,12 +14,12 @@ export default function SummaryView({ appData }: Props) {
     if (!a.score.isValid && !b.score.isValid) return 0;
     if (!a.score.isValid) return 1;
     if (!b.score.isValid) return -1;
-    return b.score.score - a.score.score;
+    return b.score.scoreAvg - a.score.scoreAvg;
   });
 
-  const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.score);
+  const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.scoreAvg);
   const topScore = validScores.length > 0 ? Math.max(...validScores) : null;
-  const getRank = (score: number) => validScores.indexOf(score) + 1;
+  const getRank = (avg: number) => validScores.indexOf(avg) + 1;
 
   if (validScores.length === 0) {
     return (
@@ -32,12 +32,12 @@ export default function SummaryView({ appData }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Scenarios shown in fixed order. The highest score is your recommended choice.
+        Scenarios sorted by average score. The highest score is your recommended choice.
       </p>
 
       {results.map(({ scenario, score }) => {
-        const isTop = score.isValid && score.score === topScore;
-        const rank = score.isValid ? getRank(score.score) : null;
+        const isTop = score.isValid && score.scoreAvg === topScore;
+        const rank = score.isValid ? getRank(score.scoreAvg) : null;
 
         return (
           <div
@@ -64,11 +64,16 @@ export default function SummaryView({ appData }: Props) {
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
-                      style={{ width: `${score.score}%` }}
+                      style={{ width: `${score.scoreAvg}%` }}
                     />
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    95% CI [{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]
+                  {/* Range — medium */}
+                  <div className="text-xs text-slate-500 font-medium mt-1">
+                    Range: {score.scoreMin.toFixed(1)} – {score.scoreMax.toFixed(1)}
+                  </div>
+                  {/* SD/CI — small */}
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    SD ± {score.sd.toFixed(1)} &nbsp;·&nbsp; 95% CI [{score.ciLow.toFixed(1)} – {score.ciHigh.toFixed(1)}]
                   </div>
                 </>
               ) : (
@@ -78,8 +83,8 @@ export default function SummaryView({ appData }: Props) {
 
             {score.isValid && (
               <div className="text-right shrink-0">
-                <div className="text-3xl font-bold text-slate-900">{score.score.toFixed(1)}</div>
-                <div className="text-xs text-slate-400">± {score.sd.toFixed(1)}</div>
+                <div className="text-3xl font-bold text-slate-900">{score.scoreAvg.toFixed(1)}</div>
+                <div className="text-xs text-slate-400">avg / 100</div>
               </div>
             )}
           </div>
@@ -87,7 +92,7 @@ export default function SummaryView({ appData }: Props) {
       })}
 
       <p className="text-xs text-slate-400 pt-2">
-        Score = weighted expected value (0–100) using importance weights and percentage likelihoods.
+        Score = weighted expected value (0–100) using importance weights and the average of each likelihood range.
         Higher score = stronger overall fit for that combination.
       </p>
     </div>

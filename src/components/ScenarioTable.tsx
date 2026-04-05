@@ -3,7 +3,7 @@
 import VariableRow from "./VariableRow";
 import ScoreDisplay from "./ScoreDisplay";
 import { computeScore } from "@/lib/calculations";
-import type { VariableDef, ScenarioEntry, ScenarioId } from "@/lib/types";
+import type { VariableDef, ScenarioEntry, ScenarioId, LikelihoodRange } from "@/lib/types";
 
 interface Props {
   scenarioId: ScenarioId;
@@ -12,7 +12,7 @@ interface Props {
   entries: Record<string, ScenarioEntry>;
   onUpdateName: (id: string, name: string) => void;
   onUpdateWeight: (scenarioId: ScenarioId, variableId: string, value: string) => void;
-  onUpdateLikelihood: (scenarioId: ScenarioId, variableId: string, value: number | null) => void;
+  onUpdateLikelihood: (scenarioId: ScenarioId, variableId: string, value: LikelihoodRange | null) => void;
   onAddVariable: () => void;
   onDeleteVariable: (id: string) => void;
 }
@@ -51,8 +51,8 @@ export default function ScenarioTable({
               <th className="text-center text-xs font-semibold text-slate-600 uppercase tracking-wide py-3 px-2 w-28 border-r border-slate-200">
                 Level of Importance
               </th>
-              <th className="text-center text-xs font-semibold text-blue-600 uppercase tracking-wide py-3 px-2 w-36">
-                Likelihood of this outcome (%)
+              <th className="text-center text-xs font-semibold text-blue-600 uppercase tracking-wide py-3 px-2 w-44">
+                Likelihood range (%)
               </th>
               <th className="w-8" />
             </tr>

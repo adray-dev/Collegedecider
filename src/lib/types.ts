@@ -4,9 +4,24 @@ export interface VariableDef {
   isPreset: boolean;
 }
 
+export interface LikelihoodRange {
+  min: number; // 0–100 percentage points
+  max: number; // 0–100 percentage points
+}
+
 export interface ScenarioEntry {
   weight: number;
-  likelihood: number | null; // 0–100 percentage points
+  likelihood: LikelihoodRange | null;
+}
+
+export interface SchoolScore {
+  scoreAvg: number;
+  scoreMin: number;
+  scoreMax: number;
+  sd: number;
+  ciLow: number;
+  ciHigh: number;
+  isValid: boolean;
 }
 
 export type ScenarioId =
@@ -26,13 +41,6 @@ export interface AppData {
   lastSaved: string | null;
 }
 
-export interface SchoolScore {
-  score: number;
-  sd: number;
-  ciLow: number;
-  ciHigh: number;
-  isValid: boolean;
-}
 
 export interface ScenarioMeta {
   id: ScenarioId;

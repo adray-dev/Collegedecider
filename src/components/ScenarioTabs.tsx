@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { SCENARIOS, SCENARIO_IDS, buildDefaultAppData } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
 import SummaryView from "./SummaryView";
-import type { AppData, ScenarioId } from "@/lib/types";
+import type { AppData, ScenarioId, LikelihoodRange } from "@/lib/types";
 
 const LS_KEY = "college-decider:app-data";
 
@@ -19,11 +19,17 @@ function loadFromLocalStorage(): AppData | null {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as AppData;
-    // Validate new format: top-level variables array + entries per scenario
+    // Validate format: top-level variables array + entries per scenario with range likelihoods
     if (
       !Array.isArray(data.variables) ||
       !SCENARIO_IDS.every((id) => data.scenarios?.[id]?.entries)
     ) {
+      return null;
+    }
+    // Reject old format where likelihood was a number (not object)
+    const firstScenario = data.scenarios[SCENARIO_IDS[0]];
+    const firstEntry = firstScenario && Object.values(firstScenario.entries)[0];
+    if (firstEntry && typeof firstEntry.likelihood === "number") {
       return null;
     }
     return data;
@@ -152,7 +158,7 @@ export default function ScenarioTabs({ initialData }: Props) {
     });
   }
 
-  function handleUpdateLikelihood(scenarioId: ScenarioId, variableId: string, value: number | null) {
+  function handleUpdateLikelihood(scenarioId: ScenarioId, variableId: string, value: LikelihoodRange | null) {
     setAppData((prev) => ({
       ...prev,
       scenarios: {
