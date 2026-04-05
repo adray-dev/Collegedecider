@@ -45,3 +45,30 @@ export function buildDefaultAppData(): AppData {
 
   return { variables, scenarios, lastSaved: null };
 }
+
+/**
+ * Merges loaded data with defaults so any missing scenarios or variable entries
+ * are filled in rather than causing a silent reset or crash.
+ */
+export function sanitizeAppData(data: AppData): AppData {
+  const defaults = buildDefaultAppData();
+  const variables =
+    Array.isArray(data.variables) && data.variables.length > 0
+      ? data.variables
+      : defaults.variables;
+
+  const scenarios = Object.fromEntries(
+    SCENARIO_IDS.map((id) => {
+      const existing = data.scenarios?.[id];
+      const defaultEntries = Object.fromEntries(
+        variables.map((v) => [v.id, { weight: 0, likelihood: null }])
+      );
+      const entries = existing?.entries
+        ? { ...defaultEntries, ...existing.entries }
+        : defaultEntries;
+      return [id, { scenarioId: id, entries }];
+    })
+  ) as AppData["scenarios"];
+
+  return { variables, scenarios, lastSaved: data.lastSaved ?? null };
+}

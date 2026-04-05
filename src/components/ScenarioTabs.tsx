@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SCENARIOS, SCENARIO_IDS, buildDefaultAppData } from "@/lib/constants";
+import { SCENARIOS, SCENARIO_IDS, buildDefaultAppData, sanitizeAppData } from "@/lib/constants";
 import ScenarioTable from "./ScenarioTable";
 import SummaryView from "./SummaryView";
 import type { AppData, ScenarioId, LikelihoodRange } from "@/lib/types";
@@ -20,20 +20,14 @@ function loadFromLocalStorage(): AppData | null {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as AppData;
-    // Validate format: top-level variables array + entries per scenario with range likelihoods
-    if (
-      !Array.isArray(data.variables) ||
-      !SCENARIO_IDS.every((id) => data.scenarios?.[id]?.entries)
-    ) {
-      return null;
-    }
+    // Reject completely corrupt data
+    if (!data.variables && !data.scenarios) return null;
     // Reject old format where likelihood was a number (not object)
-    const firstScenario = data.scenarios[SCENARIO_IDS[0]];
-    const firstEntry = firstScenario && Object.values(firstScenario.entries)[0];
-    if (firstEntry && typeof firstEntry.likelihood === "number") {
-      return null;
-    }
-    return data;
+    const firstScenario = data.scenarios?.[SCENARIO_IDS[0]];
+    const firstEntry = firstScenario && Object.values(firstScenario.entries ?? {})[0];
+    if (firstEntry && typeof firstEntry.likelihood === "number") return null;
+    // Fill in any missing scenarios/entries rather than discarding the whole dataset
+    return sanitizeAppData(data);
   } catch {
     return null;
   }
@@ -48,11 +42,12 @@ function saveToLocalStorage(data: AppData) {
 export default function ScenarioTabs({ initialData }: Props) {
   const [appData, setAppData] = useState<AppData>(() => {
     const local = typeof window !== "undefined" ? loadFromLocalStorage() : null;
+    const server = initialData.lastSaved ? sanitizeAppData(initialData) : null;
     // Use whichever source has the most recent lastSaved timestamp
-    if (initialData.lastSaved && local?.lastSaved) {
-      return initialData.lastSaved >= local.lastSaved ? initialData : local;
+    if (server && local?.lastSaved) {
+      return server.lastSaved! >= local.lastSaved ? server : local;
     }
-    if (initialData.lastSaved) return initialData;
+    if (server) return server;
     return local ?? buildDefaultAppData();
   });
 
@@ -69,10 +64,11 @@ export default function ScenarioTabs({ initialData }: Props) {
       .then((r) => r.json())
       .then((data: AppData) => {
         if (!data?.lastSaved) return;
+        const sanitized = sanitizeAppData(data);
         setAppData((current) => {
-          if (!current.lastSaved || data.lastSaved! > current.lastSaved) {
+          if (!current.lastSaved || sanitized.lastSaved! > current.lastSaved) {
             suppressNextSave.current = true;
-            return data;
+            return sanitized;
           }
           return current;
         });
