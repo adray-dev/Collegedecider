@@ -19,7 +19,15 @@ function loadFromLocalStorage(): AppData | null {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as AppData;
+    const data = JSON.parse(raw) as AppData;
+    // Validate new format: top-level variables array + entries per scenario
+    if (
+      !Array.isArray(data.variables) ||
+      !SCENARIO_IDS.every((id) => data.scenarios?.[id]?.entries)
+    ) {
+      return null;
+    }
+    return data;
   } catch {
     return null;
   }
@@ -33,45 +41,55 @@ function saveToLocalStorage(data: AppData) {
 
 export default function ScenarioTabs({ initialData }: Props) {
   const [appData, setAppData] = useState<AppData>(() => {
+    // Server has real saved data (Upstash configured) — use it
     if (initialData.lastSaved) return initialData;
+    // Otherwise fall back to localStorage, with format validation
     const local = typeof window !== "undefined" ? loadFromLocalStorage() : null;
-    // Migrate old format that doesn't have top-level variables
-    const data = local ?? initialData;
-    if (!data.variables) return buildDefaultAppData();
-    return data;
+    return local ?? buildDefaultAppData();
   });
+
+  // lastSaved is tracked separately so updating it never re-triggers the save effect
+  const [lastSaved, setLastSaved] = useState<string | null>(appData.lastSaved ?? null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("summary");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
-  // Auto-save on any appData change
+  // Auto-save on actual appData changes only.
+  // CRITICAL: never call setAppData inside this effect — that would cause an infinite loop.
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSaveState("saving");
+
     debounceRef.current = setTimeout(async () => {
-      const dataWithTimestamp = { ...appData, lastSaved: new Date().toISOString() };
-      saveToLocalStorage(dataWithTimestamp);
+      const timestamp = new Date().toISOString();
+      const dataToSave = { ...appData, lastSaved: timestamp };
+
+      // Save to localStorage immediately — this is the primary persistence layer
+      saveToLocalStorage(dataToSave);
+      setLastSaved(timestamp);
+
+      // Attempt server save (requires Upstash env vars)
       try {
         const res = await fetch("/api/data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(appData),
+          body: JSON.stringify(dataToSave),
         });
         if (!res.ok) throw new Error();
         const json = await res.json();
-        const saved = { ...appData, lastSaved: json.lastSaved ?? dataWithTimestamp.lastSaved };
-        setAppData(saved);
-        saveToLocalStorage(saved);
+        if (json.lastSaved) setLastSaved(json.lastSaved);
       } catch {
-        setAppData(dataWithTimestamp);
+        // Server unavailable — localStorage save already completed above
       }
+
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 2000);
     }, 1000);
+
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [appData]);
+  }, [appData]); // appData reference only changes when user actually edits data
 
   // ── Variable structure callbacks (apply to all scenarios) ───────────────
 
@@ -195,9 +213,9 @@ export default function ScenarioTabs({ initialData }: Props) {
               )}
               {statusLabel[saveState]}
             </span>
-            {appData.lastSaved && saveState === "idle" && (
+            {lastSaved && saveState === "idle" && (
               <span className="text-xs text-slate-400">
-                Last saved {new Date(appData.lastSaved).toLocaleString()}
+                Last saved {new Date(lastSaved).toLocaleString()}
               </span>
             )}
           </div>
@@ -254,7 +272,6 @@ export default function ScenarioTabs({ initialData }: Props) {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
