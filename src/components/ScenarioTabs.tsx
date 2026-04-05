@@ -156,25 +156,29 @@ export default function ScenarioTabs({ initialData }: Props) {
 
   function handleUpdateWeight(scenarioId: ScenarioId, variableId: string, rawValue: string) {
     setAppData((prev) => {
+      // Use the calling scenario's entries to calculate the cap
       const entries = prev.scenarios[scenarioId].entries;
       const othersSum = Object.entries(entries)
         .filter(([id]) => id !== variableId)
         .reduce((s, [, e]) => s + e.weight, 0);
       const parsed = parseInt(rawValue, 10);
       const capped = Math.min(Math.max(0, isNaN(parsed) ? 0 : parsed), 100 - othersSum);
-      return {
-        ...prev,
-        scenarios: {
-          ...prev.scenarios,
-          [scenarioId]: {
-            ...prev.scenarios[scenarioId],
+
+      // Apply the same weight to all scenarios
+      const updatedScenarios = Object.fromEntries(
+        SCENARIO_IDS.map((sid) => [
+          sid,
+          {
+            ...prev.scenarios[sid],
             entries: {
-              ...entries,
-              [variableId]: { ...entries[variableId], weight: capped },
+              ...prev.scenarios[sid].entries,
+              [variableId]: { ...prev.scenarios[sid].entries[variableId], weight: capped },
             },
           },
-        },
-      };
+        ])
+      ) as AppData["scenarios"];
+
+      return { ...prev, scenarios: updatedScenarios };
     });
   }
 
