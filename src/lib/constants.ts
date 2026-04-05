@@ -20,10 +20,10 @@ export const PRESET_VARIABLE_NAMES: string[] = [
 ];
 
 export const SCENARIOS: ScenarioMeta[] = [
-  { id: "princeton-stanford-jd", label: "Princeton + Stanford JD" },
-  { id: "princeton-nyu",         label: "Princeton + NYU" },
-  { id: "nyu-stanford-phd",      label: "NYU + Stanford PhD" },
-  { id: "stanford-jd-phd",       label: "Stanford JD + Stanford PhD" },
+  { id: "princeton-stanford-jd", label: "Princeton PhD + Stanford Law" },
+  { id: "princeton-nyu",         label: "Princeton PhD + NYU Law" },
+  { id: "nyu-stanford-phd",      label: "NYU Law + Stanford PhD" },
+  { id: "stanford-jd-phd",       label: "Stanford Law + Stanford PhD" },
 ];
 
 export const SCENARIO_IDS: ScenarioId[] = SCENARIOS.map((s) => s.id);

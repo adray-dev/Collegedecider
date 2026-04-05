@@ -10,12 +10,16 @@ export default function SummaryView({ appData }: Props) {
   const results = SCENARIOS.map((scenario) => ({
     scenario,
     score: computeScore(appData.variables, appData.scenarios[scenario.id].entries),
-  }));
+  })).sort((a, b) => {
+    if (!a.score.isValid && !b.score.isValid) return 0;
+    if (!a.score.isValid) return 1;
+    if (!b.score.isValid) return -1;
+    return b.score.score - a.score.score;
+  });
 
   const validScores = results.filter((r) => r.score.isValid).map((r) => r.score.score);
   const topScore = validScores.length > 0 ? Math.max(...validScores) : null;
-  const sorted = [...validScores].sort((a, b) => b - a);
-  const getRank = (score: number) => sorted.indexOf(score) + 1;
+  const getRank = (score: number) => validScores.indexOf(score) + 1;
 
   if (validScores.length === 0) {
     return (
