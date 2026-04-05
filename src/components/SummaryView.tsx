@@ -67,6 +67,12 @@ export default function SummaryView({ appData, sortKey, onSortChange }: Props) {
       {results.map(({ scenario, score }, i) => {
         const isTop = score.isValid && getSortScore({ scenario, score }) === topSortScore;
         const rank = score.isValid ? i + 1 : null;
+        const displayScore = score.isValid
+          ? sortKey === "min" ? score.scoreMin
+          : sortKey === "max" ? score.scoreMax
+          : score.scoreAvg
+          : 0;
+        const displayLabel = sortKey === "min" ? "min" : sortKey === "max" ? "max" : "median";
 
         return (
           <div
@@ -93,7 +99,7 @@ export default function SummaryView({ appData, sortKey, onSortChange }: Props) {
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${isTop ? "bg-emerald-500" : "bg-blue-400"}`}
-                      style={{ width: `${score.scoreAvg}%` }}
+                      style={{ width: `${displayScore}%` }}
                     />
                   </div>
                   <div className="text-xs text-slate-500 font-medium mt-1">
@@ -110,8 +116,8 @@ export default function SummaryView({ appData, sortKey, onSortChange }: Props) {
 
             {score.isValid && (
               <div className="text-right shrink-0">
-                <div className="text-3xl font-bold text-slate-900">{score.scoreAvg.toFixed(1)}</div>
-                <div className="text-xs text-slate-400">/ 100</div>
+                <div className="text-3xl font-bold text-slate-900">{displayScore.toFixed(1)}</div>
+                <div className="text-xs text-slate-400">{displayLabel} / 100</div>
               </div>
             )}
           </div>

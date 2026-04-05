@@ -20,8 +20,8 @@ export const PRESET_VARIABLE_NAMES: string[] = [
 ];
 
 export const SCENARIOS: ScenarioMeta[] = [
-  { id: "princeton-stanford-jd", label: "Princeton PhD + Stanford Law" },
-  { id: "princeton-nyu",         label: "Princeton PhD + NYU Law" },
+  { id: "princeton-stanford-jd", label: "Stanford Law + Princeton PhD" },
+  { id: "princeton-nyu",         label: "NYU Law + Princeton PhD" },
   { id: "nyu-stanford-phd",      label: "NYU Law + Stanford PhD" },
   { id: "stanford-jd-phd",       label: "Stanford Law + Stanford PhD" },
 ];
