@@ -180,6 +180,11 @@ export default function ScenarioTabs({ initialData }: Props) {
             <p className="text-sm text-slate-500 mt-1">
               Assign weights to what matters to you, then rate each outcome&apos;s likelihood per combination.
             </p>
+            <p className="text-sm text-blue-700 mt-2">
+              <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
+              100). Then rate how likely each outcome is for this combination (0–100%). Adding or removing
+              a variable updates it across all scenario tabs.
+            </p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className={`text-sm font-medium transition-colors ${statusColor[saveState]}`}>
@@ -250,13 +255,6 @@ export default function ScenarioTabs({ initialData }: Props) {
           ))}
         </div>
 
-        {activeTab !== "summary" && (
-          <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-            <strong>How to use:</strong> Set the <em>Level of Importance</em> for each factor (must total
-            100). Then rate how likely each outcome is for this combination (0–100%). Adding or removing
-            a variable here updates it across all scenario tabs.
-          </div>
-        )}
       </div>
     </div>
   );
